@@ -1,0 +1,9 @@
+[
+  {"name": "신규 안내", "facts": {}, "text": "진료실은 3번입니다.", "expect": {"room": ["applied", "3번"]}},
+  {"name": "변경", "facts": {"room": "3번"}, "text": "진료실이 5번으로 변경되었습니다.", "expect": {"room": ["applied", "5번"]}},
+  {"name": "단순 언급", "facts": {"room": "3번"}, "text": "5번 진료실은 지금 혼잡합니다.", "expect": {"room": ["ignored", "3번"]}},
+  {"name": "정정", "facts": {"visit_time": "오전 10시"}, "text": "진료 시간은 오전 10시가 아니라 11시입니다.", "expect": {"visit_time": ["applied", "11시"]}},
+  {"name": "불확실", "facts": {"room": "3번"}, "text": "아마 진료실이 5번일 거예요.", "expect": {"room": ["pending", "3번"]}},
+  {"name": "같은 값 반복", "facts": {"room": "5번"}, "text": "진료실은 5번입니다.", "expect": {"room": ["ignored", "5번"]}},
+  {"name": "취소", "facts": {"exam_time": "오후 2시"}, "text": "오늘 검사는 취소되었습니다.", "expect": {"exam_time": ["applied", null]}}
+]
