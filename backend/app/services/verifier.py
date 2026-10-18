@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from app.core.config import settings
 from app.domains import am_hours, load_domain, time_keys
-from app.schemas.analysis import Candidate
+from app.schemas.analysis import Candidate, TodoCandidate
 from app.services.normalize import fill_meridiem, normalize_value
 
 
@@ -116,3 +116,18 @@ def verify(
             decide("applied", "변경 내용을 반영했습니다")
 
     return decisions
+
+
+def verify_todos(todos: list[TodoCandidate], original_text: str, existing: set[str]) -> list[TodoCandidate]:
+    """할 일 후보 중 원문 근거가 있고, 이미 있는 할 일과 겹치지 않는 것만 남깁니다."""
+    kept: list[TodoCandidate] = []
+    seen = set(existing)
+    for t in todos:
+        text = t.text.strip()
+        if not text or text in seen:
+            continue
+        if t.evidence.strip() not in original_text:
+            continue
+        seen.add(text)
+        kept.append(TodoCandidate(text=text, evidence=t.evidence.strip()))
+    return kept

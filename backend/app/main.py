@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (테이블 등록)
-from app.api.routes import announcements, changes, sessions, transcribe
+from app.api.routes import announcements, changes, sessions, todos, transcribe
 from app.core.config import settings
 from app.db import Base, engine
 
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for router in (sessions.router, announcements.router, transcribe.router, changes.router):
+for router in (sessions.router, announcements.router, transcribe.router, changes.router, todos.router):
     app.include_router(router, prefix="/api")
 
 

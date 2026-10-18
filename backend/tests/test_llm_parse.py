@@ -44,3 +44,13 @@ def test_missing_candidates_is_empty(obj):
 def test_invalid_json_raises():
     with pytest.raises(ExtractionError):
         parse_candidates("죄송합니다, 분석할 수 없습니다.")
+
+
+def test_parses_todos_and_drops_broken_ones():
+    content = json.dumps({"candidates": [good()], "todos": [
+        {"text": "처방전을 약국에 제출하기", "evidence": "처방전은 1층 약국에 제출하세요."},
+        {"text": "근거 없음"}, "문자열",
+    ]}, ensure_ascii=False)
+    result = parse_candidates(content)
+    assert len(result.candidates) == 1
+    assert [t.text for t in result.todos] == ["처방전을 약국에 제출하기"]

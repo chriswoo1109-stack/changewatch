@@ -3,11 +3,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DB
 
 from app.domains import item_labels
-from app.models import Announcement, ChangeLog, Fact, VisitSession
-from app.schemas.analysis import AnalyzeResponse, ChangeOut
-from app.schemas.session import FactOut, SessionOut
+from app.models import Announcement, ChangeLog, Fact, Todo, VisitSession
+from app.schemas.analysis import AnalyzeResponse, ChangeOut, TodoOut
+from app.schemas.session import FactOut, SessionOut, SessionUpdate
 from app.services.llm_extractor import ExtractionError, get_extractor
-from app.services.verifier import verify
+from app.services.my_turn import detect_my_turn
+from app.services.verifier import verify, verify_todos
 
 
 def get_session_or_404(db: DB, session_id: str) -> VisitSession:
@@ -25,10 +26,34 @@ def current_facts(db: DB, session_id: str) -> dict[str, str]:
 def to_session_out(db: DB, session: VisitSession) -> SessionOut:
     labels = item_labels(session.domain)
     rows = db.scalars(select(Fact).where(Fact.session_id == session.id).order_by(Fact.id)).all()
+    todos = db.scalars(select(Todo).where(Todo.session_id == session.id).order_by(Todo.id)).all()
     return SessionOut(
-        id=session.id, title=session.title, domain=session.domain, created_at=session.created_at,
+        id=session.id, title=session.title, domain=session.domain,
+        my_number=session.my_number, my_name=session.my_name, created_at=session.created_at,
         facts=[FactOut(key=f.key, label=labels.get(f.key, f.key), value=f.value, updated_at=f.updated_at) for f in rows],
+        todos=[to_todo_out(t) for t in todos],
     )
+
+
+def update_session(db: DB, session: VisitSession, body: SessionUpdate) -> SessionOut:
+    # 요청에 포함된 필드만 바꾸고, 빈 문자열은 지운 것으로 봅니다.
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(session, field, (value or "").strip() or None)
+    db.commit()
+    return to_session_out(db, session)
+
+
+def to_todo_out(todo: Todo) -> TodoOut:
+    return TodoOut(id=todo.id, text=todo.text, evidence=todo.evidence, done=todo.done, created_at=todo.created_at)
+
+
+def update_todo(db: DB, todo_id: int, done: bool) -> TodoOut:
+    todo = db.get(Todo, todo_id)
+    if todo is None:
+        raise HTTPException(status_code=404, detail="할 일을 찾을 수 없습니다")
+    todo.done = done
+    db.commit()
+    return to_todo_out(todo)
 
 
 def to_change_out(log: ChangeLog, labels: dict[str, str]) -> ChangeOut:
@@ -83,12 +108,21 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
         )
         db.add(log)
         logs.append(log)
+
+    existing_todos = set(db.scalars(select(Todo.text).where(Todo.session_id == session.id)).all())
+    todos = [
+        Todo(session_id=session.id, announcement_id=announcement.id, text=t.text, evidence=t.evidence)
+        for t in verify_todos(extraction.todos, text, existing_todos)
+    ]
+    db.add_all(todos)
     db.commit()
 
     changes = [to_change_out(log, labels) for log in logs]
     return AnalyzeResponse(
         announcement_id=announcement.id, text=text, changes=changes,
         needs_confirmation=any(c.status == "pending" for c in changes),
+        todos=[to_todo_out(t) for t in todos],
+        my_turn=detect_my_turn(text, session.my_number, session.my_name),
     )
 
 

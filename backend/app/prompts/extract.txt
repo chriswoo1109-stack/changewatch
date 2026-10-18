@@ -27,5 +27,10 @@
 - confidence는 0~1 사이 숫자로, 판단에 대한 확신 정도다.
 - 추측하지 말고, 원문에 없는 정보는 만들지 마라.
 
+할 일(todos):
+- 안내를 들은 사람이 해야 하는 행동을 짧은 문장으로 정리하라. (예: "처방전을 약국에 제출하기", "검사 전 8시간 금식하기")
+- evidence 규칙은 위와 같다. 할 일이 없으면 빈 배열로 둔다.
+
 다음 JSON 형식으로만 답하라:
-{{"candidates": [{{"key": "...", "value": "...", "change_type": "...", "evidence": "...", "confidence": 0.0}}]}}
+{{"candidates": [{{"key": "...", "value": "...", "change_type": "...", "evidence": "...", "confidence": 0.0}}],
+ "todos": [{{"text": "...", "evidence": "..."}}]}}

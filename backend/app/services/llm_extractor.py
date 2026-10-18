@@ -14,7 +14,7 @@ from pydantic import ValidationError
 
 from app.core.config import settings
 from app.domains import load_domain
-from app.schemas.analysis import Candidate, ExtractionResult
+from app.schemas.analysis import Candidate, ExtractionResult, TodoCandidate
 from app.services.normalize import normalize_value
 from app.services.verifier import UNCERTAIN_WORDS
 
@@ -27,6 +27,7 @@ CANCEL_WORDS = ["취소"]
 CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]
 # 안내·지시로 끝나는 말투. "5번 진료실로 가주세요"는 언급이 아니라 안내다. ("가 주세요", "이동하세요", "바랍니다" 포함)
 DIRECTIVE_RE = re.compile(r"(세요|주십시오|십시오|바랍니다|입니다|됩니다)$")
+TODO_RE = re.compile(r"(하세요|해 주세요|해주세요|하십시오)[.!?]?$")
 VALUE_RE = re.compile(r"(오전|오후)?\s*\d+\s*(번|층|시\s*\d+\s*분|시|분|일|주|회|개월)(\s*(뒤|후))?")
 
 
@@ -41,9 +42,13 @@ class MockExtractor:
     def extract(self, text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
         items = load_domain(domain)["items"]
         candidates: list[Candidate] = []
+        todos: list[TodoCandidate] = []
         for sentence in split_sentences(text):
             item = next((i for i in items if any(k in sentence for k in i["keywords"])), None)
             if item is None:
+                # 추적 항목은 없지만 "~하세요"로 끝나면 할 일로 봅니다. (예: 처방전은 약국에 제출하세요)
+                if TODO_RE.search(sentence):
+                    todos.append(TodoCandidate(text=sentence.rstrip(".!? "), evidence=sentence))
                 continue
             keyword = next(k for k in item["keywords"] if k in sentence)
 
@@ -77,7 +82,7 @@ class MockExtractor:
                 Candidate(key=item["key"], value=value, change_type=change_type,
                           evidence=sentence, confidence=confidence)
             )
-        return ExtractionResult(candidates=candidates)
+        return ExtractionResult(candidates=candidates, todos=todos)
 
 
 class OpenAIExtractor:
@@ -111,7 +116,7 @@ class ExtractionError(Exception):
 
 
 def parse_candidates(content: str) -> ExtractionResult:
-    """AI 응답을 후보 목록으로 바꿉니다.
+    """AI 응답을 변경 후보·할 일 목록으로 바꿉니다.
 
     형식이 틀린 후보 하나 때문에 전체 분석이 실패하지 않도록, 고칠 수 있는 건 고치고
     고칠 수 없는 후보만 버립니다. 버려진 후보는 저장되지 않으므로 Fact에 영향이 없습니다.
@@ -121,12 +126,15 @@ def parse_candidates(content: str) -> ExtractionResult:
     except json.JSONDecodeError as e:
         raise ExtractionError("AI 응답이 JSON 형식이 아닙니다") from e
 
-    raw = data.get("candidates") if isinstance(data, dict) else None
-    if not isinstance(raw, list):
-        return ExtractionResult(candidates=[])
+    if not isinstance(data, dict):
+        return ExtractionResult()
+
+    def as_list(field: str) -> list:
+        raw = data.get(field)
+        return raw if isinstance(raw, list) else []
 
     candidates: list[Candidate] = []
-    for item in raw:
+    for item in as_list("candidates"):
         if not isinstance(item, dict):
             continue
         item = dict(item)
@@ -143,7 +151,14 @@ def parse_candidates(content: str) -> ExtractionResult:
             candidates.append(Candidate.model_validate(item))
         except ValidationError as e:
             logger.warning("형식이 틀린 AI 후보를 버립니다: %s (%s)", item, e.errors()[0]["msg"])
-    return ExtractionResult(candidates=candidates)
+
+    todos: list[TodoCandidate] = []
+    for item in as_list("todos"):
+        try:
+            todos.append(TodoCandidate.model_validate(item))
+        except ValidationError:
+            logger.warning("형식이 틀린 할 일 후보를 버립니다: %s", item)
+    return ExtractionResult(candidates=candidates, todos=todos)
 
 
 def get_extractor():

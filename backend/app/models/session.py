@@ -15,4 +15,7 @@ class VisitSession(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: uuid.uuid4().hex)
     title: Mapped[str] = mapped_column(String)
     domain: Mapped[str] = mapped_column(String, default="hospital")
+    # 내 차례 알림용. 안내에서 이 번호·이름이 불리면 알린다.
+    my_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    my_name: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

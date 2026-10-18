@@ -7,6 +7,7 @@ import SessionPage from "./pages/SessionPage";
 import ConfirmPage from "./pages/ConfirmPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
+import ShowPage from "./pages/ShowPage";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/confirm" element={<ConfirmPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/show" element={<ShowPage />} />
         </Routes>
       </main>
       <BottomNav />
