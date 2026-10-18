@@ -29,6 +29,7 @@ CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]
 # 안내·지시로 끝나는 말투. "5번 진료실로 가주세요"는 언급이 아니라 안내다. ("가 주세요", "이동하세요", "바랍니다" 포함)
 DIRECTIVE_RE = re.compile(r"(세요|주십시오|십시오|바랍니다|입니다|됩니다)$")
 TODO_RE = re.compile(r"(하세요|해 주세요|해주세요|하십시오)[.!?]?$")
+CALL_SUFFIX_RE = re.compile(r"\s*(?:환자|고객|손님|님|예약|진료 예약|검사 예정)")
 VALUE_RE = re.compile(r"(오전|오후)?\s*\d+\s*(번|층|시\s*\d+\s*분|시|분|일|주|회|개월)(\s*(뒤|후))?")
 
 
@@ -59,7 +60,9 @@ class MockExtractor:
             target = sentence.split("아니라", 1)[1] if "아니라" in sentence else sentence
             # 값 찾기용으로만 한글 숫자를 바꾼다 (evidence는 원문 그대로)
             target = normalize_value(target)
-            match = VALUE_RE.search(target)
+            # "37번 환자분", "오전 11시 예약 환자분"처럼 사람을 부르는 데 쓰인 숫자는 값이 아니다
+            match = next((m for m in VALUE_RE.finditer(target)
+                          if not CALL_SUFFIX_RE.match(target, m.end())), None)
             if match:
                 value = re.sub(r"\s+", " ", match.group(0)).strip()
             elif item.get("value_pattern"):
@@ -100,9 +103,12 @@ class OpenAIExtractor:
         self, text: str, domain: str, facts: dict[str, str], my_number: str | None = None, my_name: str | None = None
     ) -> ExtractionResult:
         spec = load_domain(domain)
-        prompt = PROMPT_PATH.read_text(encoding="utf-8").format(
+        prompt =PROMPT_PATH.read_text(encoding="utf-8").format(
             domain_label=spec["label"],
-            items="\n".join(f"- {i['key']}: {i['label']}" for i in spec["items"]),
+            items="\n".join(
+                f"- {i['key']}: {i['label']}" + (f" — {i['description']}" if i.get("description") else "")
+                for i in spec["items"]
+            ),
             facts=json.dumps(facts, ensure_ascii=False) if facts else "(없음)",
             me=f"번호: {my_number or '모름'}, 이름: {my_name or '모름'}",
             text=text,

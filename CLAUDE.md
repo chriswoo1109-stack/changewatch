@@ -84,11 +84,10 @@ changewatch/
 1. evidence(근거 문장)가 원문에 없으면 → pending
 2. 도메인 템플릿에 없는 key → pending
 3. mention → ignored (기존 값 유지)
-3-1. 다른 사람을 부르는 안내("12번 환자분…", "김철수님…", 근거가 든 원문 문장 전체로 확인)
-     → 내 번호·이름을 등록했으면 ignored, 등록 안 했으면 pending
+3-1. 안내 대상(`services/audience.py`, 근거가 든 원문 문장 전체로 판단): 다른 사람("12번 환자분", "김철수님", 내 시각과 다른 "오전 11시 예약 환자분들", 내 진료실과 다른 "3번 진료실 환자분들") → ignored / 누구인지 모름(내 번호·이름·시각 미설정, "처음 오신 분은") → pending (사유에 "내 번호를 등록하면 자동으로 구분해요" 안내)
 4. uncertain, confidence < 0.7, 또는 근거에 불확실 표현("아마", "것 같", "쯤" 등)이 있으면 → pending
 5. cancel: 기존 값 있으면 applied(Fact 삭제), 없으면 ignored
-6. 값 없음 / 문장 형태(30자 초과, "~니다·~세요" 등) / 항목의 `value_pattern` 불일치 → pending, 기존과 같은 값 → ignored
+6. 값 없음 / 문장 형태(30자 초과, "~니다·~세요" 등) / 항목의 `value_pattern` 불일치 / 값 뒤에 `not_followed_by`("12번 환자분") → pending, 기존과 같은 값 → ignored
    (비교 전 값 정규화: 한글 숫자 → 숫자, `type: "time"` 항목은 `am_hours` 기준 오전/오후 보정 — `services/normalize.py`)
 7. new인데 다른 기존 값이 있음 → pending
 8. 그 외 → applied
@@ -109,6 +108,8 @@ npm run build                      # 타입 검사 + 빌드
 ## 코딩 규칙
 - **API 형식을 바꾸면** `docs/api.md`, `backend/app/schemas/`, `frontend/src/types/index.ts` 세 곳을 함께 수정한다.
 - 새 분야는 코드가 아니라 `backend/app/domains/<분야>.json` 추가로 확장한다.
+  항목 필드: `key`, `label`, `keywords`(모의 분석기용), `description`(AI 프롬프트에 표시), `type: "time"`, `value_pattern`, `not_followed_by`, `group_call`("3번 진료실 환자분들"처럼 묶음 호출에 쓰이는 항목)
+- 프롬프트·항목 설명을 바꾸면 `python -m scripts.evaluate --provider openai`를 2회 이상 돌려 **잘못된 반영 수**가 늘지 않았는지 확인한다. (작은 문구 변경으로 다른 유형이 깨지는 일이 잦다)
 - 변경 판단 로직을 바꾸면 `tests/fixtures/sentences.json`에 사례를 추가하고 `pytest`가 통과하는지 확인한다.
 - AI가 만든 결과는 반드시 `verifier`를 거친 뒤 저장한다. 라우트나 extractor에서 Fact를 직접 바꾸지 않는다.
 - 사용자에게 보이는 문구와 에러 메시지(`detail`)는 한국어로 쓴다.

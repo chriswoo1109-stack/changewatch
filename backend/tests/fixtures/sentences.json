@@ -25,7 +25,7 @@
 
   {"name": "언급 - 다른 진료실 소개", "tags": ["mention"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "옆 7번 진료실은 소아과입니다.", "expect": {"room": [["ignored", null], "3번"]}},
   {"name": "언급 - 다른 환자 예약 시간", "tags": ["mention"], "facts": {"visit_time": "오전 10시"}, "text": "오전 11시 예약 환자분들은 접수처로 와 주세요.", "expect": {"visit_time": [["ignored", null], "오전 10시"]}},
-  {"name": "언급 - 다른 번호 호출", "tags": ["mention"], "mock_xfail": true, "facts": {"wait_number": "15번"}, "text": "12번 환자분 진료실로 들어오세요.", "expect": {"wait_number": [["ignored", null], "15번"], "room": [["ignored", null], null]}},
+  {"name": "언급 - 다른 번호 호출 (내 번호 모름)", "tags": ["mention", "audience"], "facts": {"wait_number": "15번"}, "text": "12번 환자분 진료실로 들어오세요.", "expect": {"wait_number": [["pending", "ignored", null], "15번"], "room": [["pending", "ignored", null], null]}},
 
   {"name": "불확실 - 것 같아요", "tags": ["uncertain"], "mock_xfail": true, "facts": {"visit_time": "오전 10시"}, "text": "진료는 11시쯤 될 것 같아요.", "expect": {"visit_time": ["pending", "오전 10시"]}},
   {"name": "불확실 - 아직 미정", "tags": ["uncertain"], "facts": {"exam_time": "오후 2시"}, "text": "검사 시간은 아직 확실하지 않습니다. 확인 후 다시 알려드릴게요.", "expect": {"exam_time": [["pending", null], "오후 2시"]}},
@@ -52,6 +52,24 @@
   {"name": "말투 - 가 주세요 (띄어 씀)", "tags": ["new", "directive"], "facts": {}, "text": "5번 진료실로 가 주세요.", "expect": {"room": ["applied", "5번"]}},
   {"name": "말투 - 이동해 주시기 바랍니다", "tags": ["change", "directive"], "facts": {"room": "3번"}, "text": "7번 진료실로 이동해 주시기 바랍니다.", "expect": {"room": ["applied", "7번"]}},
   {"name": "말투 - 기존 값 있을 때 가주세요", "tags": ["change", "directive"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "5번 진료실로 가주세요.", "expect": {"room": ["applied", "5번"]}},
+
+  {"name": "준비물 - 신규", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "준비물은 신분증과 보험증입니다.", "expect": {"supplies": ["applied", ["신분증과 보험증", "신분증, 보험증", "신분증 및 보험증"]]}},
+  {"name": "준비물 - 가져오세요", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "진료 의뢰서를 가져오세요.", "expect": {"supplies": ["applied", ["진료 의뢰서", "진료의뢰서"]]}},
+  {"name": "준비물 - 챙겨 오세요 (복용 키워드와 겹침)", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "복용 중인 약 목록을 챙겨 오세요.", "expect": {"supplies": ["applied", "*"]}},
+  {"name": "준비물 - 변경", "tags": ["supplies", "change"], "mock_xfail": true, "facts": {"supplies": "신분증"}, "text": "준비물이 신분증에서 보험증으로 바뀌었습니다.", "expect": {"supplies": ["applied", "보험증"]}},
+  {"name": "준비물 - 필요 없어짐", "tags": ["supplies", "cancel"], "mock_xfail": true, "facts": {"supplies": "보험증"}, "text": "준비물로 안내드린 보험증은 가져오지 않으셔도 됩니다.", "expect": {"supplies": ["applied", null]}},
+  {"name": "준비물 - 단순 언급", "tags": ["supplies", "mention"], "facts": {"supplies": "신분증"}, "text": "신분증을 두고 가신 분은 접수처에서 찾아가세요.", "expect": {"supplies": [["ignored", null], "신분증"]}},
+  {"name": "준비물 - 불확실", "tags": ["supplies", "uncertain"], "facts": {}, "text": "준비물로 아마 보험증이 필요할 거예요.", "expect": {"supplies": ["pending", null]}},
+  {"name": "준비물 - 다음 진료 때 가져오세요", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {"next_visit": "2주 뒤"}, "text": "다음 진료 때 검사 결과지를 가져오세요.", "expect": {"supplies": ["applied", ["검사 결과지", "검사결과지"]], "next_visit": [["ignored", null], "2주 뒤"], "exam_time": [["ignored", "pending", null], null]}},
+
+  {"name": "대상 - 다른 번호 호출", "tags": ["audience", "mention"], "me": {"my_number": "37"}, "facts": {}, "text": "12번 환자분 3번 진료실로 오세요.", "expect": {"room": [["ignored", null], null]}},
+  {"name": "대상 - 내 번호 호출", "tags": ["audience", "new"], "me": {"my_number": "37"}, "facts": {}, "text": "37번 환자분 3번 진료실로 오세요.", "expect": {"room": ["applied", "3번"]}},
+  {"name": "대상 - 번호 호출, 내 번호 모름", "tags": ["audience", "uncertain"], "facts": {}, "text": "37번 환자분 3번 진료실로 오세요.", "expect": {"room": ["pending", null]}},
+  {"name": "대상 - 다른 이름 호출", "tags": ["audience", "mention"], "me": {"my_name": "홍길동"}, "facts": {"room": "5번"}, "text": "김철수님 2번 진료실로 오세요.", "expect": {"room": [["ignored", null], "5번"]}},
+  {"name": "대상 - 내 이름 호출", "tags": ["audience", "change"], "mock_xfail": true, "me": {"my_name": "홍길동"}, "facts": {"room": "5번"}, "text": "홍길동님 2번 진료실로 오세요.", "expect": {"room": ["applied", "2번"]}},
+  {"name": "대상 - 내 예약 시간대", "tags": ["audience", "change"], "mock_xfail": true, "facts": {"visit_time": "오전 11시", "room": "3번"}, "text": "오전 11시 예약 환자분들은 5번 진료실로 가 주세요.", "expect": {"room": ["applied", "5번"]}},
+  {"name": "대상 - 예약 시간대, 내 시간 모름", "tags": ["audience", "uncertain"], "facts": {}, "text": "오후 2시 예약 환자분들은 7번 진료실로 가 주세요.", "expect": {"room": ["pending", null]}},
+  {"name": "대상 - 누구인지 모르는 안내", "tags": ["audience", "uncertain"], "facts": {}, "text": "처음 오신 분은 1번 진료실로 가 주세요.", "expect": {"room": ["pending", null]}},
 
   {"name": "여러 항목 - 한 문장", "tags": ["multi", "new"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번이고, 검사는 오후 3시입니다.", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "여러 항목 - 유지와 변경", "tags": ["multi", "change"], "mock_xfail": true, "facts": {"room": "3번", "exam_time": "오후 2시"}, "text": "진료실은 그대로 3번이고, 검사만 오후 4시로 변경되었습니다.", "expect": {"room": [["ignored", null], "3번"], "exam_time": ["applied", "오후 4시"]}},

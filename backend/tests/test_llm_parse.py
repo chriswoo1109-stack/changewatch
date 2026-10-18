@@ -54,3 +54,29 @@ def test_parses_todos_and_drops_broken_ones():
     result = parse_candidates(content)
     assert len(result.candidates) == 1
     assert [t.text for t in result.todos] == ["처방전을 약국에 제출하기"]
+
+
+def test_openai_extractor_builds_prompt_and_parses(monkeypatch):
+    """실제 API 없이 OpenAIExtractor를 끝까지 실행합니다.
+
+    여기서 예외가 나면 앱은 조용히 모의 분석기로 대체되므로(extract_safely), 테스트로 따로 확인합니다.
+    """
+    from types import SimpleNamespace
+
+    from app.services import llm_extractor
+
+    sent = {}
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            sent["prompt"] = kwargs["messages"][0]["content"]
+            content = json.dumps({"candidates": [good()], "todos": []}, ensure_ascii=False)
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+    extractor = llm_extractor.OpenAIExtractor.__new__(llm_extractor.OpenAIExtractor)
+    extractor.client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+
+    result = extractor.extract("진료실이 5번으로 변경되었습니다.", "hospital", {"room": "3번"}, "37", "홍길동")
+    assert [c.value for c in result.candidates] == ["5번"]
+    assert "번호: 37, 이름: 홍길동" in sent["prompt"]
+    assert "supplies: 준비물 — " in sent["prompt"]  # 항목 설명이 프롬프트에 들어감

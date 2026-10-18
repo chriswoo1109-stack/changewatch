@@ -17,9 +17,10 @@ CASES = json.loads((Path(__file__).parent / "fixtures" / "sentences.json").read_
 KEYS = set(item_labels("hospital"))
 
 
-def run(facts: dict, text: str) -> tuple[dict, dict]:
-    candidates = MockExtractor().extract(text, "hospital", facts).candidates
-    decisions = verify(candidates, facts, text, KEYS, domain="hospital")
+def run(facts: dict, text: str, me: dict | None = None) -> tuple[dict, dict]:
+    me = me or {}
+    candidates = MockExtractor().extract(text, "hospital", facts, **me).candidates
+    decisions = verify(candidates, facts, text, KEYS, domain="hospital", **me)
     after = dict(facts)
     statuses = {}
     for d in decisions:
@@ -46,7 +47,7 @@ PARAMS = [
 
 @pytest.mark.parametrize("case", PARAMS)
 def test_sentence_cases(case):
-    statuses, after = run(case["facts"], case["text"])
+    statuses, after = run(case["facts"], case["text"], case.get("me"))
     for key, (status, value) in case["expect"].items():
         assert statuses.get(key) in as_list(status)
         if value == "*":
@@ -127,3 +128,43 @@ def test_candidates_follow_text_order():
     decisions = verify([new, cancel], {"exam_time": "오후 2시"}, text, KEYS, domain="hospital")
     assert [d.candidate.change_type for d in decisions] == ["cancel", "change"]
     assert decisions[-1].status == "applied"
+
+
+def test_called_patient_number_is_not_room():
+    text = "12번 환자분 진료실로 들어오세요."
+    c = Candidate(key="room", value="12번", change_type="new", evidence=text, confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+def test_room_after_my_number_call_is_ok():
+    text = "12번 환자분 3번 진료실로 오세요."
+    c = Candidate(key="room", value="3번", change_type="new", evidence=text, confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital", my_number="12")
+    assert d.status == "applied"
+
+
+@pytest.mark.parametrize("my_number, expected", [("37", "ignored"), (None, "pending")])
+def test_other_or_unknown_audience(my_number, expected):
+    # AI가 "다른 사람 안내"를 놓치고 change라고 해도 verifier가 막는다
+    text = "12번 환자분 3번 진료실로 오세요."
+    c = Candidate(key="room", value="3번", change_type="change", evidence=text, confidence=1.0)
+    [d] = verify([c], {"room": "5번"}, text, KEYS, domain="hospital", my_number=my_number)
+    assert d.status == expected
+
+
+def test_audience_uses_whole_sentence_when_ai_trims_evidence():
+    # AI가 근거를 "3번 진료실로 오세요."로 잘라 줘도 앞의 "12번 환자분"을 보고 막는다
+    text = "12번 환자분 3번 진료실로 오세요."
+    c = Candidate(key="room", value="3번", change_type="new", evidence="3번 진료실로 오세요.", confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital", my_number="37")
+    assert d.status == "ignored"
+
+
+@pytest.mark.parametrize("my_room, expected", [("3번", "applied"), ("7번", "ignored"), (None, "pending")])
+def test_room_group_call(my_room, expected):
+    text = "3번 진료실 환자분들은 5번 진료실로 이동해 주시기 바랍니다."
+    c = Candidate(key="room", value="5번", change_type="change", evidence=text, confidence=1.0)
+    facts = {"room": my_room} if my_room else {}
+    [d] = verify([c], facts, text, KEYS, domain="hospital")
+    assert d.status == expected
