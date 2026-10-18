@@ -12,7 +12,7 @@ import ShowPage from "./pages/ShowPage";
 export default function App() {
   return (
     // 휴대폰 화면 폭으로 고정해 앱처럼 보이게 합니다.
-    <div className="mx-auto flex min-h-full max-w-md flex-col bg-white shadow-sm">
+    <div className="mx-auto flex min-h-full max-w-md flex-col bg-slate-50 shadow-sm">
       <main className="flex-1 overflow-y-auto pb-20">
         <Routes>
           <Route path="/" element={<HomePage />} />

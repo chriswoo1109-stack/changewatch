@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { transcribeAudio } from "../api/announcements";
 import AlertFlash from "../components/common/AlertFlash";
 import Icon from "../components/common/Icon";
+import ListeningOrb from "../components/common/ListeningOrb";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useCurrentSession } from "../hooks/useCurrentSession";
 import { useRecorder } from "../hooks/useRecorder";
@@ -115,6 +116,11 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
           </p>
         ))}
         {interim && <p className="text-3xl leading-snug text-slate-400">{interim}</p>}
+        {listening && !interim && lines.length === 0 && (
+          <div className="flex justify-center py-10">
+            <ListeningOrb state={ready ? "listening" : "idle"} />
+          </div>
+        )}
         {listening && !interim && (
           <p className={`text-center text-xl font-semibold ${ready ? "text-green-400" : "text-slate-500"}`}>
             {ready ? (
@@ -184,13 +190,7 @@ function RecordAndUpload({ sessionId }: { sessionId: string }) {
       title={recording ? "안내 방송을 듣고 있어요..." : transcribing || loading ? "분석하고 있어요" : "버튼을 눌러 녹음을 시작하세요"}
     >
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <div
-          className={`flex h-28 w-28 items-center justify-center rounded-full ${
-            recording ? "animate-pulse bg-red-500/80" : transcribing || loading ? "animate-pulse bg-brand-500/60" : "bg-slate-700"
-          }`}
-        >
-          <Icon name="mic" className="h-12 w-12" />
-        </div>
+        <ListeningOrb state={recording ? "listening" : transcribing || loading ? "busy" : "idle"} />
         <p className="font-mono text-3xl">{mmss}</p>
         {status && <p className="whitespace-pre-line text-center text-sm text-slate-300">{status}</p>}
       </div>

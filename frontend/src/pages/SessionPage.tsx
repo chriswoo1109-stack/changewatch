@@ -4,7 +4,7 @@ import Card from "../components/common/Card";
 import Icon from "../components/common/Icon";
 import PendingBanner from "../components/common/PendingBanner";
 import CalendarList from "../components/session/CalendarList";
-import FactList from "../components/session/FactList";
+import FactTiles from "../components/session/FactTiles";
 import TodoList from "../components/session/TodoList";
 import { useCurrentSession } from "../hooks/useCurrentSession";
 import { useHistory } from "../hooks/useHistory";
@@ -44,37 +44,31 @@ export default function SessionPage() {
 
       <PendingBanner count={pendingCount} />
 
-      <Card>
-        <p className="text-sm font-semibold">지금 유효한 정보</p>
-        <div className="mb-1 mt-2 flex flex-wrap gap-1.5">
-          <div className="contents">
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold">지금 유효한 정보</h2>
+          <div className="flex gap-1.5">
             {canSpeak && (
-              <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-sm" onClick={() => speak(describeFacts(session.facts))}>
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-card"
+                onClick={() => speak(describeFacts(session.facts))}
+                aria-label="읽어주기"
+                title="읽어주기"
+              >
                 <Icon name="volume" className="h-4 w-4" />
-                읽어주기
               </button>
             )}
-            <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-sm" onClick={share}>
+            <button
+              className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm text-slate-600 shadow-card"
+              onClick={share}
+            >
               <Icon name="share" className="h-4 w-4" />
               가족에게 공유
             </button>
           </div>
         </div>
-        <FactList facts={session.facts} recent={recent} />
-        {canceled.length > 0 && (
-          <ul className="mt-2 space-y-1 border-t border-slate-100 pt-2">
-            {canceled.map((c) => (
-              <li key={c.id} className="flex justify-between text-sm">
-                <span className="text-slate-400">{c.label}</span>
-                <span>
-                  <span className="mr-2 text-slate-400 line-through">{c.old_value}</span>
-                  <span className="font-semibold text-red-600">취소됨</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+        <FactTiles facts={session.facts} recent={recent} canceled={canceled} />
+      </section>
 
       <Card>
         <p className="mb-2 text-sm font-semibold">해야 할 일</p>

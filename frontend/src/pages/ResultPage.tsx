@@ -4,6 +4,7 @@ import { confirmChange } from "../api/sessions";
 import AlertFlash from "../components/common/AlertFlash";
 import Button from "../components/common/Button";
 import ChangeCard from "../components/result/ChangeCard";
+import ChangeHero from "../components/result/ChangeHero";
 import Icon from "../components/common/Icon";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useSessionStore } from "../stores/sessionStore";
@@ -60,26 +61,32 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
         <Headline applied={applied} pending={pending} todos={todos} total={lastResult.changes.length} />
         {canSpeak && (applied.length > 0 || pending.length > 0 || todos.length > 0) && (
           <button
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-3 py-2 text-sm"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-card"
             onClick={() => speak([...[...applied, ...pending].map(describeChange), describeTodos(todos)].join(" "))}
+            aria-label="다시 듣기"
+            title="다시 듣기"
           >
-            <Icon name="volume" className="h-4 w-4" />
-            다시 듣기
+            <Icon name="volume" className="h-5 w-5" />
           </button>
         )}
       </div>
-      <p className="whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
-        <span className="mb-1 block text-xs text-slate-400">들은 안내</span>“{lastResult.text}”
-      </p>
       {myTurn && (
-        <div className="rounded-2xl bg-amber-400 p-4 text-slate-900" role="status">
-          <p className="flex items-center gap-2 text-lg font-bold">
-            <Icon name="bell" className="h-6 w-6" />
+        <div className="rounded-3xl bg-amber-400 p-5 text-slate-900 shadow-lg shadow-amber-400/30" role="status">
+          <p className="flex items-center gap-2 text-2xl font-black">
+            <Icon name="bell" className="h-7 w-7" />
             내 차례예요! ({myTurn.matched})
           </p>
-          <p className="text-sm">“{myTurn.evidence}”</p>
+          <p className="mt-2 rounded-xl bg-white/40 px-3 py-2 text-sm">“{myTurn.evidence}”</p>
         </div>
       )}
+
+      {applied.map((c) => (
+        <ChangeHero key={c.id} change={c} />
+      ))}
+
+      <p className="whitespace-pre-line rounded-2xl bg-white p-4 text-sm text-slate-600 shadow-card">
+        <span className="mb-1 block text-xs font-semibold text-slate-400">들은 안내</span>“{lastResult.text}”
+      </p>
       {applied.length === 0 && pending.length === 0 && todos.length === 0 && !myTurn && <RetryBox text={lastResult.text} />}
 
       {pending.length > 0 && (
@@ -90,19 +97,11 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
         </Section>
       )}
 
-      {applied.length > 0 && (
-        <Section title="반영했어요">
-          {applied.map((c) => (
-            <ChangeCard key={c.id} change={c} />
-          ))}
-        </Section>
-      )}
-
       {todos.length > 0 && (
         <Section title="할 일이 생겼어요">
           <ul className="space-y-2">
             {todos.map((t) => (
-              <li key={t.id} className="rounded-2xl border border-slate-200 p-4">
+              <li key={t.id} className="rounded-2xl bg-white p-4 shadow-card">
                 <p className="flex items-start gap-2 font-semibold">
                   <Icon name="square" className="mt-0.5 h-5 w-5 text-slate-400" />
                   {t.text}

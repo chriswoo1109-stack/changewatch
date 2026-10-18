@@ -72,11 +72,16 @@ export default function HomePage() {
 
   return (
     <div className="space-y-5 p-5">
-      <header>
-        <h1 className="text-2xl font-bold">
-          체인지<span className="text-brand-600">워치</span>
-        </h1>
-        <p className="text-sm text-slate-500">들은 안내를 정리하고, 바뀐 정보만 알려드려요.</p>
+      <header className="-mx-5 -mt-5 bg-linear-to-b from-brand-100 to-slate-50 px-5 pb-4 pt-7">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-md shadow-brand-600/30">
+            <Icon name="check" className="h-6 w-6" />
+          </span>
+          <h1 className="text-2xl font-black tracking-tight">
+            체인지<span className="text-brand-600">워치</span>
+          </h1>
+        </div>
+        <p className="mt-2 text-sm text-slate-600">들은 안내를 정리하고, 바뀐 정보만 알려드려요.</p>
       </header>
 
       {sessionError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{sessionError}</p>}
@@ -141,7 +146,7 @@ export default function HomePage() {
 
           <button
             onClick={() => navigate("/record")}
-            className="mx-auto flex h-36 w-36 flex-col items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-200 active:scale-95"
+            className="mx-auto flex h-36 w-36 flex-col items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xl shadow-brand-600/30 ring-8 ring-brand-100 transition active:scale-95"
           >
             <Icon name="mic" className="h-12 w-12" />
             <span className="mt-1 font-semibold">듣기 시작하기</span>
