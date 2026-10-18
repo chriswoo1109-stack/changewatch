@@ -6,7 +6,7 @@ from app.domains import item_labels
 from app.models import Announcement, ChangeLog, Fact, Todo, VisitSession
 from app.schemas.analysis import AnalyzeResponse, ChangeOut, TodoOut
 from app.schemas.session import FactOut, SessionOut, SessionUpdate
-from app.services.llm_extractor import ExtractionError, get_extractor
+from app.services.llm_extractor import extract_safely
 from app.services.my_turn import detect_my_turn
 from app.services.verifier import verify, verify_todos
 
@@ -87,12 +87,8 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
     db.add(announcement)
     db.flush()
 
-    try:
-        extraction = get_extractor().extract(text, session.domain, facts)
-    except ExtractionError:
-        # 아직 commit 전이라 안내 원문도 저장되지 않습니다. 사용자는 같은 내용으로 다시 시도하면 됩니다.
-        db.rollback()
-        raise HTTPException(status_code=502, detail="AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요")
+    # AI가 실패해도(호출 오류·응답 형식 오류) 모의 분석기로 대체하므로 시연이 멈추지 않습니다.
+    extraction = extract_safely(text, session.domain, facts)
     decisions = verify(extraction.candidates, facts, text, set(labels), domain=session.domain)
 
     logs: list[ChangeLog] = []

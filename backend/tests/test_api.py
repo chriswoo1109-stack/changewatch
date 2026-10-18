@@ -29,8 +29,9 @@ def test_full_flow():
     assert len(client.get(f"/api/sessions/{sid}/history").json()) == 2
 
 
-def test_ai_failure_returns_502(monkeypatch):
-    from app.services import session_service
+def test_ai_failure_falls_back_to_mock_with_extraction_error(monkeypatch):
+    # AI 분석이 실패하면 502로 멈추지 않고 모의 분석기 결과로 응답한다 (결과는 verifier를 거침)
+    from app.services import llm_extractor
     from app.services.llm_extractor import ExtractionError
 
     class Broken:
@@ -38,13 +39,11 @@ def test_ai_failure_returns_502(monkeypatch):
             raise ExtractionError("테스트용 실패")
 
     sid = client.post("/api/sessions", json={"title": "실패 테스트", "domain": "hospital"}).json()["id"]
-    monkeypatch.setattr(session_service, "get_extractor", lambda: Broken())
+    monkeypatch.setattr(llm_extractor, "get_extractor", lambda: Broken())
 
     r = client.post(f"/api/sessions/{sid}/announcements", json={"text": "진료실은 3번입니다."})
-    assert r.status_code == 502
-    assert "다시 시도" in r.json()["detail"]
-    # 실패한 분석은 아무것도 저장하지 않는다
-    assert client.get(f"/api/sessions/{sid}/history").json() == []
+    assert r.status_code == 200
+    assert r.json()["changes"][0]["new_value"] == "3번"
 
 
 def test_todos_flow():

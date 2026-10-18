@@ -20,7 +20,8 @@ from app.services.verifier import UNCERTAIN_WORDS
 
 logger = logging.getLogger(__name__)
 
-PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
+logger = logging.getLogger(__name__)
+PROMPT_PATH =Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]
@@ -89,7 +90,8 @@ class OpenAIExtractor:
     def __init__(self) -> None:
         from openai import OpenAI
 
-        self.client = OpenAI(api_key=settings.openai_api_key)
+        # 응답이 늦으면 오래 기다리지 않고 모의 분석기로 넘어가도록 짧게 잡습니다.
+        self.client = OpenAI(api_key=settings.openai_api_key, timeout=20, max_retries=1)
 
     def extract(self, text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
         spec = load_domain(domain)
@@ -163,3 +165,19 @@ def parse_candidates(content: str) -> ExtractionResult:
 
 def get_extractor():
     return OpenAIExtractor() if settings.use_openai else MockExtractor()
+
+
+def extract_safely(text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
+    """AI 분석이 실패하면(ExtractionError: 호출 오류·JSON 아님 등) 모의 분석기로 대신 처리합니다.
+
+    형식이 조금 틀린 응답은 parse_candidates가 먼저 고쳐 쓰므로, 여기까지 오는 건 복구할 수 없는 경우뿐입니다.
+    결과는 어느 쪽이든 verifier를 거치므로, 시연 중 에러로 멈추는 것보다 안전합니다.
+    """
+    extractor = get_extractor()
+    try:
+        return extractor.extract(text, domain, facts)
+    except Exception:
+        if isinstance(extractor, MockExtractor):
+            raise
+        logger.exception("AI 분석 실패 → 모의 분석기로 대체")
+        return MockExtractor().extract(text, domain, facts)
