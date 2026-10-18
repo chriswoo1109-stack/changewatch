@@ -16,3 +16,14 @@ def load_domain(domain: str) -> dict:
 
 def item_labels(domain: str) -> dict[str, str]:
     return {item["key"]: item["label"] for item in load_domain(domain)["items"]}
+
+
+def time_keys(domain: str) -> set[str]:
+    """시각 항목(type: time). 오전/오후 보정 대상입니다."""
+    return {item["key"] for item in load_domain(domain)["items"] if item.get("type") == "time"}
+
+
+def am_hours(domain: str) -> tuple[int, int]:
+    """오전/오후를 말하지 않은 시각을 '오전'으로 볼 범위. 그 밖은 오후로 봅니다."""
+    start, end = load_domain(domain).get("am_hours", [7, 11])
+    return start, end

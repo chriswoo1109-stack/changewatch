@@ -80,12 +80,14 @@ changewatch/
 - status: `applied | pending | ignored | rejected`
 
 ### verifier 규칙 (순서대로 적용)
+0. 후보를 근거 문장이 원문에 나온 순서로 정렬한 뒤 판단 (AI가 순서를 섞어도 "취소 → 새 일정" 유지)
 1. evidence(근거 문장)가 원문에 없으면 → pending
 2. 도메인 템플릿에 없는 key → pending
 3. mention → ignored (기존 값 유지)
-4. uncertain 또는 confidence < 0.7 → pending
+4. uncertain, confidence < 0.7, 또는 근거에 불확실 표현("아마", "것 같", "쯤" 등)이 있으면 → pending
 5. cancel: 기존 값 있으면 applied(Fact 삭제), 없으면 ignored
-6. 값 없음 → pending / 기존과 같은 값 → ignored
+6. 값 없음 / 문장 형태(30자 초과, "~니다·~세요" 등) / 항목의 `value_pattern` 불일치 → pending, 기존과 같은 값 → ignored
+   (비교 전 값 정규화: 한글 숫자 → 숫자, `type: "time"` 항목은 `am_hours` 기준 오전/오후 보정 — `services/normalize.py`)
 7. new인데 다른 기존 값이 있음 → pending
 8. 그 외 → applied
 
@@ -95,6 +97,7 @@ changewatch/
 source .venv/Scripts/activate
 uvicorn app.main:app --reload      # http://localhost:8000/docs
 pytest -v
+python -m scripts.evaluate [--provider openai]   # 변경 판단 정확도 평가
 
 # 프론트 (frontend 폴더에서)
 npm run dev                        # http://localhost:5173

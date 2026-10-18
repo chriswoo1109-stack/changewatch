@@ -1,11 +1,12 @@
 {
   "domain": "hospital",
   "label": "병원",
+  "am_hours": [7, 11],
   "items": [
-    {"key": "room", "label": "진료실", "keywords": ["진료실"]},
-    {"key": "wait_number", "label": "대기 순번", "keywords": ["순번", "대기번호", "대기 번호"]},
-    {"key": "exam_time", "label": "검사 시간", "keywords": ["검사"]},
-    {"key": "visit_time", "label": "진료 시간", "keywords": ["진료 시간", "진료시간", "예약 시간"]},
+    {"key": "room", "label": "진료실", "value_pattern": "[0-9]", "keywords": ["진료실"]},
+    {"key": "wait_number", "label": "대기 순번", "value_pattern": "[0-9]", "keywords": ["순번", "대기번호", "대기 번호"]},
+    {"key": "exam_time", "label": "검사 시간", "type": "time", "value_pattern": "[0-9]", "keywords": ["검사"]},
+    {"key": "visit_time", "label": "진료 시간", "type": "time", "value_pattern": "[0-9]", "keywords": ["진료 시간", "진료시간", "예약 시간"]},
     {"key": "medication", "label": "복용 방법", "keywords": ["복용", "드세요", "약은"]},
     {"key": "next_visit", "label": "다음 예약", "keywords": ["다음 예약", "다음 진료", "다시 오세요", "오세요"]}
   ]
