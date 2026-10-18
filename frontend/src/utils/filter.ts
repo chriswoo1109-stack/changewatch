@@ -24,7 +24,7 @@ const TRACK_WORDS = ["진료실", "순번", "대기번호", "대기 번호", "�
 
 // 음성 인식이 자주 틀리는 안내 단어 보정. 실제 시연 중 나온 오인식을 모아 둔 목록입니다.
 // ("진료실"은 발음이 [질료실]이라 "증류시리", "직묘실", "진료신도" 등으로 자주 들립니다)
-const MISHEARD = "(?:진료|증류|직묘|진뇨|질료|질려|진려|진류|질류|진주)\\s?"; // 띄어쓰기 허용
+const MISHEARD = "(?:진료|증료|증류|직묘|진뇨|질료|질려|진려|진류|질류|진주)\\s?"; // 띄어쓰기 허용
 const misheard = (tail: string) => new RegExp(MISHEARD + tail, "g");
 const FIXES: [RegExp, string][] = [
   [misheard("시리"), "진료실이"],
