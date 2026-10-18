@@ -54,6 +54,13 @@ def called_someone_else(sentence: str, my_number: str | None, my_name: str | Non
     return None
 
 
+def called_person(c: Candidate, suffixes: list[str]) -> bool:
+    """근거 문장에서 값 바로 뒤에 "환자" 등이 붙으면 사람을 부르는 번호다. ("12번 환자분 들어오세요")"""
+    if not suffixes or not c.value:
+        return False
+    return any(re.search(re.escape(c.value) + r"\s*" + re.escape(s), c.evidence) for s in suffixes)
+
+
 @dataclass
 class Decision:
     candidate: Candidate
@@ -138,13 +145,15 @@ def verify(
                 decide("ignored", "취소할 기존 정보가 없습니다")
             else:
                 decide("applied", "기존 안내가 취소되었습니다")
-        # 6. 값이 없거나, 문장 형태거나, 항목 형식(value_pattern)에 안 맞거나, 그대로면 반영하지 않는다
+        # 6. 값이 없거나, 문장 형태거나, 항목 형식(value_pattern·not_followed_by)에 안 맞거나, 그대로면 반영하지 않는다
         elif not c.value:
             decide("pending", "값을 확인하지 못했습니다")
         elif looks_like_sentence(c.value):
             decide("pending", "바뀐 값을 정확히 찾지 못해 확인이 필요합니다")
         elif (pattern := items.get(c.key, {}).get("value_pattern")) and not re.search(pattern, c.value):
             decide("pending", "값의 형식이 맞지 않아 확인이 필요합니다")
+        elif called_person(c, items.get(c.key, {}).get("not_followed_by", [])):
+            decide("pending", "다른 사람을 부르는 번호일 수 있어 확인이 필요합니다")
         elif norm(c.key, old) == c.value:
             decide("ignored", "기존 정보와 같은 값입니다")
         # 7. 신규인데 이미 다른 값이 있으면 변경인지 사용자에게 묻는다

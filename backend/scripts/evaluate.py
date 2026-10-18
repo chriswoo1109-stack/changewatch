@@ -73,8 +73,12 @@ def run_case(extractor, case: dict, keys: set[str]) -> dict:
             "expected": [exp_status, exp_value],
             "actual": [statuses.get(key), after.get(key)],
         })
-    # 기대하지 않은 항목이 반영되면 사용자에게 틀린 정보를 보여주게 되므로 실패
-    wrong_applied = [k for k, s in statuses.items() if s == "applied" and k not in case["expect"]]
+    # 반영되면 안 되는 항목이 반영되면 사용자에게 틀린 정보를 보여주게 되므로 실패
+    # (기대 목록에 없는 항목이 applied, 또는 기대 status에 applied가 없는데 applied)
+    wrong_applied = [
+        k for k, s in statuses.items()
+        if s == "applied" and (k not in case["expect"] or "applied" not in as_list(case["expect"][k][0]))
+    ]
 
     return {
         "name": case["name"],

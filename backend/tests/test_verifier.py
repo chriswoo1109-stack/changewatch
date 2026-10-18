@@ -127,3 +127,17 @@ def test_candidates_follow_text_order():
     decisions = verify([new, cancel], {"exam_time": "오후 2시"}, text, KEYS, domain="hospital")
     assert [d.candidate.change_type for d in decisions] == ["cancel", "change"]
     assert decisions[-1].status == "applied"
+
+
+def test_called_patient_number_is_not_room():
+    text = "12번 환자분 진료실로 들어오세요."
+    c = Candidate(key="room", value="12번", change_type="new", evidence=text, confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+def test_room_after_patient_call_is_ok():
+    text = "12번 환자분 3번 진료실로 오세요."
+    c = Candidate(key="room", value="3번", change_type="new", evidence=text, confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital", my_number="12")
+    assert d.status == "applied"

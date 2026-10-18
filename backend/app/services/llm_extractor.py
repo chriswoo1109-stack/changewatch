@@ -102,7 +102,10 @@ class OpenAIExtractor:
         spec = load_domain(domain)
         prompt = PROMPT_PATH.read_text(encoding="utf-8").format(
             domain_label=spec["label"],
-            items="\n".join(f"- {i['key']}: {i['label']}" for i in spec["items"]),
+            items="\n".join(
+                f"- {i['key']}: {i['label']}" + (f" — {i['description']}" if i.get("description") else "")
+                for i in spec["items"]
+            ),
             facts=json.dumps(facts, ensure_ascii=False) if facts else "(없음)",
             me=f"번호: {my_number or '모름'}, 이름: {my_name or '모름'}",
             text=text,
