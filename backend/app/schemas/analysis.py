@@ -81,3 +81,14 @@ class ConfirmRequest(BaseModel):
 
 class TranscribeResponse(BaseModel):
     text: str
+
+
+class ListenResponse(BaseModel):
+    """대기 모드 조각 1개의 처리 결과."""
+
+    text: str = Field(description="이번 조각에서 새로 들린 문장 (겹친 부분·잡음 문장 제거 후). 없으면 빈 문자열")
+    skipped: bool = Field(description="조용하거나 들린 내용이 없어 건너뜀")
+    my_turn: MyTurnOut | None = None
+    analysis: AnalyzeResponse | None = Field(
+        default=None, description="안내 키워드가 있을 때만 분석. 없으면 null (AI 호출 절약)"
+    )

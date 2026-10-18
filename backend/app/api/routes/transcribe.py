@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session as DB
 
 from app.db import get_db
-from app.schemas.analysis import TranscribeResponse
-from app.services import session_service, stt_service
+from app.schemas.analysis import ListenResponse, TranscribeResponse
+from app.services import listen_service, session_service, stt_service
 
 router = APIRouter(prefix="/sessions", tags=["transcribe"])
 
@@ -15,3 +15,16 @@ async def transcribe_audio(session_id: str, file: UploadFile = File(...), db: DB
     data = await file.read()
     text = stt_service.transcribe(file.filename or "audio.webm", data, file.content_type, session.domain)
     return TranscribeResponse(text=text)
+
+
+@router.post("/{session_id}/listen", response_model=ListenResponse)
+async def listen_chunk(
+    session_id: str,
+    file: UploadFile = File(...),
+    prev_text: str | None = Form(None),
+    db: DB = Depends(get_db),
+):
+    """대기 모드: 음성 조각 1개를 듣고, 내 차례·안내 변경을 확인합니다."""
+    session = session_service.get_session_or_404(db, session_id)
+    data = await file.read()
+    return listen_service.listen(db, session, file.filename or "audio.webm", data, file.content_type, prev_text)

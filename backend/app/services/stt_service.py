@@ -12,9 +12,20 @@ MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 
 def transcribe(filename: str, data: bytes, content_type: str | None, domain: str = "hospital") -> str:
-    """녹음 파일을 텍스트로 바꿉니다. OpenAI 키가 있어야 동작합니다.
+    """녹음 파일을 텍스트로 바꿉니다. OpenAI 키가 있어야 동작합니다."""
+    text = transcribe_raw(filename, data, content_type, domain)
+    if not text:
+        raise HTTPException(status_code=422, detail="안내를 알아듣지 못했어요. 다시 녹음하거나 텍스트로 입력해 주세요.")
+    return text
 
-    분야 용어를 prompt로 함께 보내 인식 정확도를 높입니다. (domains/*.json의 stt_hints)
+
+def transcribe_raw(
+    filename: str, data: bytes, content_type: str | None, domain: str = "hospital", prev_text: str | None = None
+) -> str:
+    """음성 인식만 합니다. 결과가 비어 있어도 에러로 보지 않습니다. (대기 모드는 조용한 구간이 많음)
+
+    prompt로 분야 용어(domains/*.json의 stt_hints)를 보내 인식 정확도를 높이고,
+    prev_text(직전 조각의 텍스트)가 있으면 뒤에 붙여 조각 경계에서 잘린 문장을 이어서 알아듣게 합니다.
     """
     if not settings.openai_api_key:
         raise HTTPException(
@@ -34,7 +45,7 @@ def transcribe(filename: str, data: bytes, content_type: str | None, domain: str
             model=settings.stt_model,
             file=(filename, data, content_type or "audio/webm"),
             language="ko",
-            prompt=stt_prompt(domain),
+            prompt=stt_prompt(domain) + (" " + prev_text[-200:] if prev_text else ""),
         )
     except Exception:
         logger.exception("음성 인식 실패")
@@ -42,8 +53,4 @@ def transcribe(filename: str, data: bytes, content_type: str | None, domain: str
             status_code=502,
             detail="음성 인식에 실패했습니다. 잠시 후 다시 시도하거나 텍스트로 입력해 주세요.",
         )
-
-    text = (result.text or "").strip()
-    if not text:
-        raise HTTPException(status_code=422, detail="안내를 알아듣지 못했어요. 다시 녹음하거나 텍스트로 입력해 주세요.")
-    return text
+    return (result.text or "").strip()

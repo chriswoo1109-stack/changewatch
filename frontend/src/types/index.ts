@@ -58,6 +58,14 @@ export interface AnalyzeResponse {
   my_turn: MyTurn | null;
 }
 
+/** 대기 모드 조각 1개의 처리 결과 */
+export interface ListenResponse {
+  text: string; // 새로 들린 문장. 다음 조각을 보낼 때 prev_text로 넘깁니다.
+  skipped: boolean;
+  my_turn: MyTurn | null;
+  analysis: AnalyzeResponse | null; // 안내 키워드가 있을 때만
+}
+
 export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
   new: "신규",
   change: "변경",
