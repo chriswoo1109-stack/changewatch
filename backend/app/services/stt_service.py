@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException
 
 from app.core.config import settings
+from app.domains import stt_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,11 @@ logger = logging.getLogger(__name__)
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 
-def transcribe(filename: str, data: bytes, content_type: str | None) -> str:
-    """녹음 파일을 텍스트로 바꿉니다. OpenAI 키가 있어야 동작합니다."""
+def transcribe(filename: str, data: bytes, content_type: str | None, domain: str = "hospital") -> str:
+    """녹음 파일을 텍스트로 바꿉니다. OpenAI 키가 있어야 동작합니다.
+
+    분야 용어를 prompt로 함께 보내 인식 정확도를 높입니다. (domains/*.json의 stt_hints)
+    """
     if not settings.openai_api_key:
         raise HTTPException(
             status_code=501,
@@ -30,6 +34,7 @@ def transcribe(filename: str, data: bytes, content_type: str | None) -> str:
             model=settings.stt_model,
             file=(filename, data, content_type or "audio/webm"),
             language="ko",
+            prompt=stt_prompt(domain),
         )
     except Exception:
         logger.exception("음성 인식 실패")
