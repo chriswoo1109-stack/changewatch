@@ -35,7 +35,7 @@ def test_ai_failure_falls_back_to_mock_with_extraction_error(monkeypatch):
     from app.services.llm_extractor import ExtractionError
 
     class Broken:
-        def extract(self, *args):
+        def extract(self, *args, **kwargs):
             raise ExtractionError("테스트용 실패")
 
     sid = client.post("/api/sessions", json={"title": "실패 테스트", "domain": "hospital"}).json()["id"]

@@ -3,7 +3,7 @@
   "label": "병원",
   "am_hours": [7, 11],
   "items": [
-    {"key": "room", "label": "진료실", "description": "이 사용자가 가야 할 진료실 번호 (다른 환자를 부르는 번호는 아님)", "value_pattern": "[0-9]", "not_followed_by": ["환자"], "keywords": ["진료실"]},
+    {"key": "room", "label": "진료실", "description": "이 사용자가 가야 할 진료실 번호 (다른 환자를 부르는 번호는 아님)", "value_pattern": "[0-9]", "not_followed_by": ["환자"], "group_call": true, "keywords": ["진료실"]},
     {"key": "wait_number", "label": "대기 순번", "description": "이 사용자의 대기 순번·대기 번호", "value_pattern": "[0-9]", "keywords": ["순번", "대기번호", "대기 번호"]},
     {"key": "exam_time", "label": "검사 시간", "description": "검사 시각", "type": "time", "value_pattern": "[0-9]", "keywords": ["검사"]},
     {"key": "visit_time", "label": "진료 시간", "description": "진료·예약 시각", "type": "time", "value_pattern": "[0-9]", "keywords": ["진료 시간", "진료시간", "예약 시간"]},

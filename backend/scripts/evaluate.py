@@ -14,6 +14,7 @@ tests/fixtures/sentences.json 문장 세트를 분석기 + verifier에 통과시
     - status: "applied" 등 하나, 또는 허용 목록 ["ignored", null]  (null = 후보를 만들지 않음)
     - 값: 문자열 하나, 허용 목록 ["11시", "오전 11시"], null(값 없음), "*"(값은 채점하지 않음)
     - expect에 없는 key가 applied 되면 '잘못된 반영'으로 실패 처리합니다.
+    - me: 이 사용자 정보 {"my_number": "37", "my_name": "홍길동"} (선택, 없으면 모름)
     - mock_xfail: 모의 분석기의 한계로 틀려도 되는 문장 (pytest에서 xfail 처리)
 """
 
@@ -50,9 +51,9 @@ def value_ok(actual: str | None, expected) -> bool:
 
 
 def run_case(extractor, case: dict, keys: set[str]) -> dict:
-    facts = case["facts"]
-    candidates = extractor.extract(case["text"], DOMAIN, facts).candidates
-    decisions = verify(candidates, facts, case["text"], keys, domain=DOMAIN)
+    facts, me = case["facts"], case.get("me", {})
+    candidates = extractor.extract(case["text"], DOMAIN, facts, **me).candidates
+    decisions = verify(candidates, facts, case["text"], keys, domain=DOMAIN, **me)
 
     after = dict(facts)
     statuses: dict[str, str] = {}  # 같은 key가 여러 번 나오면 마지막 판단
