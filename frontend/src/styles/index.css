@@ -1,6 +1,31 @@
 @import "tailwindcss";
 
+/* 메인 색(brand). 색을 바꾸려면 여기만 고치면 됩니다.
+   흰 글씨를 올리는 600·700은 글씨 대비 4.5:1 이상인 진한 초록으로 골랐습니다. */
+@theme {
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-500: #10b981;
+  --color-brand-600: #047857;
+  --color-brand-700: #065f46;
+
+  /* 카드 그림자: 아주 옅게 두 겹 */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 16px rgb(15 23 42 / 0.05);
+}
+
+/* Tailwind v4는 테두리 기본색이 글자색(검정)이라 연한 회색으로, 입력 중에는 초록 테두리 */
+@layer base {
+  *, ::before, ::after { border-color: var(--color-slate-200); }
+  input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 1px;
+  }
+}
+
 html, body, #root { height: 100%; }
+/* 어르신 사용자를 고려해 기본 글씨를 16px → 17px로. Tailwind 크기(rem)가 모두 같은 비율로 커집니다 */
+html { font-size: 106.25%; }
 body {
   margin: 0;
   background: #f1f5f9;
@@ -14,6 +39,7 @@ body {
   50% { opacity: 0.85; }
 }
 .cw-flash {
+  opacity: 0; /* 기본은 투명. 이게 없으면 깜빡임이 끝난 뒤 노란 막이 화면을 덮은 채 남습니다 */
   animation: cw-flash 1s ease-in-out 3;
 }
 @media (prefers-reduced-motion: reduce) {

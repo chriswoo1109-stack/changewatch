@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import PendingBanner from "../components/common/PendingBanner";
 import ChangeCard from "../components/result/ChangeCard";
 import { useHistory } from "../hooks/useHistory";
 import { useSessionStore } from "../stores/sessionStore";
@@ -29,11 +29,7 @@ export default function HistoryPage() {
       {!sessionId && <p className="text-slate-500">진행 중인 방문이 없습니다.</p>}
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-      {pendingCount > 0 && (
-        <Link to="/confirm" className="block rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">
-          ⚠ 확인이 필요한 안내 {pendingCount}건 →
-        </Link>
-      )}
+      <PendingBanner count={pendingCount} />
 
       {history.length > 0 && (
         <div className="flex gap-2 overflow-x-auto">

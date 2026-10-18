@@ -1,4 +1,4 @@
-import type { Change, Fact } from "../types";
+import type { Change, Fact, Todo } from "../types";
 import { eunNeun, euroRo, iGa } from "./josa";
 
 export const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
@@ -31,4 +31,9 @@ export function describeChange(c: Change) {
 export function describeFacts(facts: Fact[]) {
   if (facts.length === 0) return "아직 정리된 안내가 없습니다.";
   return facts.map((f) => `${eunNeun(f.label)} ${f.value}입니다.`).join(" ");
+}
+
+/** 새로 생긴 할 일을 읽는 문장 */
+export function describeTodos(todos: Todo[]) {
+  return todos.length ? `할 일이 ${todos.length}건 생겼습니다. ${todos.map((t) => t.text).join(". ")}.` : "";
 }

@@ -24,7 +24,7 @@ export default function ConfirmPage() {
       {!loading && !error && pending.length === 0 && (
         <div className="space-y-2">
           <p className="text-slate-500">확인할 안내가 없습니다.</p>
-          <Link to="/session" className="text-sm text-blue-600 underline">
+          <Link to="/session" className="text-sm text-brand-600 underline">
             오늘의 안내 보기
           </Link>
         </div>

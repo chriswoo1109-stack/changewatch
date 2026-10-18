@@ -6,29 +6,6 @@ export function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
 }
 
-export interface Todo {
-  id: string; // "항목:값" — 값이 바뀌면 새 할 일로 취급
-  text: string;
-}
-
-// 항목별 할 일 문구. 도메인 템플릿(backend/app/domains/hospital.json)의 key와 맞춥니다.
-const TODO_TEXT: Record<string, (v: string) => string> = {
-  room: (v) => `${v} 진료실 앞에서 기다리기`,
-  wait_number: (v) => `내 대기 순번(${v}) 호출 듣기`,
-  exam_time: (v) => `${v}까지 검사실로 이동하기`,
-  visit_time: (v) => `진료 시간(${v})에 맞춰 도착하기`,
-  medication: (v) => `약 복용 방법 지키기: ${v}`,
-  next_visit: (v) => `다음 예약(${v}) 일정에 저장하기`,
-};
-
-/** 현재 유효한 정보로 할 일 목록을 만듭니다. */
-export function factsToTodos(facts: Fact[]): Todo[] {
-  return facts.map((f) => ({
-    id: `${f.key}:${f.value}`,
-    text: TODO_TEXT[f.key]?.(f.value) ?? `${f.label}: ${f.value} 확인하기`,
-  }));
-}
-
 /** 항목별로 가장 최근에 반영된 변경을 찾습니다. 이력은 최신순입니다. */
 export function latestAppliedChanges(history: Change[]) {
   const map = new Map<string, Change>();

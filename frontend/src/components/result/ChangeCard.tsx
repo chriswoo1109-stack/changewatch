@@ -6,6 +6,7 @@ import { formatTime, showUrl, staffQuestion } from "../../utils/format";
 import { euroRo } from "../../utils/josa";
 import Badge from "../common/Badge";
 import Card from "../common/Card";
+import Icon from "../common/Icon";
 
 interface Props {
   change: Change;
@@ -65,7 +66,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
 
       {change.status === "pending" && onConfirm && (
         <div className="space-y-2 pt-1">
-          <p className="text-sm font-semibold text-amber-700">확실하지 않은 안내예요. 이 내용으로 바꿀까요?</p>
+          <p className="text-sm font-semibold text-amber-700">이 내용으로 바꿀까요?</p>
           <div className="flex gap-2">
             <button
               className="flex-1 rounded-lg border border-slate-300 bg-white py-2.5 text-sm disabled:opacity-40"
@@ -75,7 +76,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
               아니에요
             </button>
             <button
-              className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:bg-slate-300"
+              className="flex-1 rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:bg-slate-300"
               disabled={busy}
               onClick={() => confirm(true)}
             >
@@ -89,9 +90,10 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
                 change.old_value ? `아까는 ${euroRo(change.old_value)} 들었어요` : undefined,
                 change.id,
               )}
-              className="block rounded-lg bg-slate-800 py-2.5 text-center text-sm font-semibold text-white"
+              className="flex items-center justify-center gap-2 rounded-lg bg-slate-800 py-2.5 text-sm font-semibold text-white"
             >
-              🙋 직원에게 물어보기 (큰 글씨 화면)
+              <Icon name="ask" className="h-4 w-4" />
+              직원에게 물어보기 (큰 글씨 화면)
             </Link>
           )}
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -113,13 +115,13 @@ function ValueLine({ change }: { change: Change }) {
   }
   const muted = change.status === "ignored" || change.status === "rejected";
   if (!change.old_value) {
-    return <p className={`text-lg font-bold ${muted ? "text-slate-400" : "text-blue-600"}`}>{change.new_value ?? "-"}</p>;
+    return <p className={`text-lg font-bold ${muted ? "text-slate-400" : "text-brand-600"}`}>{change.new_value ?? "-"}</p>;
   }
   return (
     <p className="text-lg">
       <span className={muted ? "font-bold text-slate-700" : "text-slate-400 line-through"}>{change.old_value}</span>
-      <span className="mx-2 text-slate-400">{muted ? "유지 ·" : "→"}</span>
-      <span className={muted ? "text-slate-400" : "font-bold text-blue-600"}>
+      <span className="mx-2 text-slate-400">{muted ? "유지 ·" : <Icon name="arrowRight" className="h-4 w-4 align-[-2px]" />}</span>
+      <span className={muted ? "text-slate-400" : "font-bold text-brand-600"}>
         {muted ? `${change.new_value} ${change.status === "rejected" ? "거절" : "언급"}` : change.new_value}
       </span>
     </p>

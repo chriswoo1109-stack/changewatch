@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { confirmChange } from "../api/sessions";
+import Icon from "../components/common/Icon";
 import { useSessionStore } from "../stores/sessionStore";
 import { canSpeak, speak } from "../utils/speak";
 
@@ -15,6 +16,8 @@ export default function ShowPage() {
   const changeId = Number(params.get("change")) || null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 주소로 바로 열었으면(앱 안 이전 화면 없음) 뒤로 가기 대신 정리 화면으로
+  const close = () => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate("/session", { replace: true }));
 
   const answer = async (approve: boolean) => {
     if (!changeId) return;
@@ -26,7 +29,7 @@ export default function ShowPage() {
       if (lastResult?.changes.some((c) => c.id === changeId)) {
         setLastResult({ ...lastResult, changes: lastResult.changes.map((c) => (c.id === changeId ? updated : c)) });
       }
-      navigate(-1);
+      close();
     } catch (e) {
       setError(e instanceof Error ? e.message : "처리하지 못했습니다.");
       setBusy(false);
@@ -36,12 +39,13 @@ export default function ShowPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white p-6">
       <div className="flex justify-between">
-        <button className="text-3xl text-slate-400" onClick={() => navigate(-1)} aria-label="닫기">
-          ×
+        <button className="text-slate-400" onClick={close} aria-label="닫기">
+          <Icon name="close" className="h-8 w-8" />
         </button>
         {canSpeak && (
-          <button className="rounded-full bg-slate-100 px-4 py-2 text-sm" onClick={() => speak(question)}>
-            🔊 소리로 읽기
+          <button className="flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm" onClick={() => speak(question)}>
+            <Icon name="volume" className="h-4 w-4" />
+            소리로 읽기
           </button>
         )}
       </div>
@@ -64,7 +68,7 @@ export default function ShowPage() {
               아니래요
             </button>
             <button
-              className="flex-1 rounded-2xl bg-blue-600 py-5 text-xl font-bold text-white disabled:bg-slate-300"
+              className="flex-1 rounded-2xl bg-brand-600 py-5 text-xl font-bold text-white disabled:bg-slate-300"
               disabled={busy}
               onClick={() => answer(true)}
             >
@@ -74,7 +78,7 @@ export default function ShowPage() {
           {error && <p className="text-center text-sm text-red-600">{error}</p>}
         </div>
       ) : (
-        <button className="rounded-2xl bg-slate-100 py-4 text-lg font-semibold" onClick={() => navigate(-1)}>
+        <button className="rounded-2xl bg-slate-100 py-4 text-lg font-semibold" onClick={close}>
           확인했어요
         </button>
       )}
