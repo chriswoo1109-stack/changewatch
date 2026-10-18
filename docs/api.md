@@ -1,4 +1,7 @@
-# ChangeWatch API 명세 (v0.1)
+# ChangeWatch API 명세 (v0.2)
+
+> v0.2 변경: 할 일(todos), 내 차례 알림(my_number·my_name, my_turn) 추가.
+> DB 테이블 구조가 바뀌었으므로 **로컬 `backend/changewatch.db`를 지우고** 서버를 다시 실행하세요.
 
 - 기본 주소: `http://localhost:8000/api`
 - 백엔드를 실행하면 `http://localhost:8000/docs` 에서 직접 호출해 볼 수 있습니다.
@@ -25,19 +28,33 @@
 ## 1. 방문 세션 만들기
 `POST /sessions`
 ```json
-// 요청
-{ "title": "오늘 병원 방문", "domain": "hospital" }
+// 요청 (my_number, my_name은 선택. 내 차례 알림에 사용)
+{ "title": "오늘 병원 방문", "domain": "hospital", "my_number": "37", "my_name": null }
 // 응답 201
-{ "id": "a1b2...", "title": "오늘 병원 방문", "domain": "hospital", "created_at": "2026-10-17T10:00:00", "facts": [] }
+{
+  "id": "a1b2...", "title": "오늘 병원 방문", "domain": "hospital",
+  "my_number": "37", "my_name": null, "created_at": "2026-10-17T10:00:00",
+  "facts": [], "todos": []
+}
 ```
 
-## 2. 세션 조회 (현재 유효한 정보)
+## 2. 세션 조회 (현재 유효한 정보 + 할 일)
 `GET /sessions/{session_id}`
 ```json
 {
-  "id": "a1b2...", "title": "오늘 병원 방문", "domain": "hospital", "created_at": "...",
-  "facts": [ { "key": "room", "label": "진료실", "value": "5번", "updated_at": "..." } ]
+  "id": "a1b2...", "title": "오늘 병원 방문", "domain": "hospital",
+  "my_number": "37", "my_name": null, "created_at": "...",
+  "facts": [ { "key": "room", "label": "진료실", "value": "5번", "updated_at": "..." } ],
+  "todos": [ { "id": 1, "text": "처방전을 약국에 제출하기", "evidence": "처방전은 약국에 제출하세요.", "done": false, "created_at": "..." } ]
 }
+```
+
+## 2-1. 내 번호·이름 바꾸기
+`PATCH /sessions/{session_id}`
+```json
+// 요청: 보낸 필드만 바뀜. 빈 문자열 ""은 지우기
+{ "my_number": "42" }
+// 응답: 세션 (2번과 같은 형식)
 ```
 
 ## 3. 안내 분석 ★
@@ -58,9 +75,18 @@
       "confidence": 0.9, "status": "applied", "reason": "변경 내용을 반영했습니다",
       "created_at": "..."
     }
-  ]
+  ],
+  "todos": [],
+  "my_turn": null
 }
 ```
+- `todos`: 이번 안내에서 **새로** 생긴 할 일만. 전체 목록은 2번 세션 조회의 `todos`.
+  원문에 근거가 없거나 이미 있는 할 일은 저장하지 않습니다.
+- `my_turn`: 내 번호·이름이 불렸을 때만 채워짐. 프론트는 이 값이 있으면 화면·소리·진동으로 알립니다.
+  ```json
+  { "matched": "37번", "evidence": "37번 환자분 3번 진료실로 오세요." }
+  ```
+  "137번", "370번"은 37번으로 보지 않습니다.
 
 ## 4. 음성 → 텍스트
 `POST /sessions/{session_id}/transcribe` (multipart/form-data, 필드 이름 `file`)
@@ -81,6 +107,19 @@
 // 응답: 처리된 Change (status가 applied 또는 rejected로 바뀜)
 ```
 - 이미 처리된 변경이면 `409`.
+
+## 7. 할 일 체크
+`PATCH /todos/{todo_id}`
+```json
+// 요청
+{ "done": true }
+// 응답: 바뀐 Todo
+{ "id": 1, "text": "처방전을 약국에 제출하기", "evidence": "처방전은 약국에 제출하세요.", "done": true, "created_at": "..." }
+```
+- 없는 할 일이면 `404`.
+
+## 읽어주기 (TTS)
+- 서버 API 없음. 프론트에서 브라우저 `speechSynthesis`로 `changes`의 내용을 읽습니다.
 
 ## 에러 형식
 ```json

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.domains import load_domain
-from app.schemas.analysis import Candidate, ExtractionResult
+from app.schemas.analysis import Candidate, ExtractionResult, TodoCandidate
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
@@ -19,6 +19,7 @@ UNCERTAIN_WORDS = ["아마", "것 같", "일걸", "일 겁니다", "일 거예�
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]
 CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]
+TODO_RE = re.compile(r"(하세요|해 주세요|해주세요|하십시오)[.!?]?$")
 VALUE_RE = re.compile(r"(오전|오후)?\s*\d+\s*(번|층|시\s*\d+\s*분|시|분|일|주|회|개월)(\s*(뒤|후))?")
 
 
@@ -33,9 +34,13 @@ class MockExtractor:
     def extract(self, text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
         items = load_domain(domain)["items"]
         candidates: list[Candidate] = []
+        todos: list[TodoCandidate] = []
         for sentence in split_sentences(text):
             item = next((i for i in items if any(k in sentence for k in i["keywords"])), None)
             if item is None:
+                # 추적 항목은 없지만 "~하세요"로 끝나면 할 일로 봅니다. (예: 처방전은 약국에 제출하세요)
+                if TODO_RE.search(sentence):
+                    todos.append(TodoCandidate(text=sentence.rstrip(".!? "), evidence=sentence))
                 continue
             keyword = next(k for k in item["keywords"] if k in sentence)
 
@@ -61,7 +66,7 @@ class MockExtractor:
                 Candidate(key=item["key"], value=value, change_type=change_type,
                           evidence=sentence, confidence=confidence)
             )
-        return ExtractionResult(candidates=candidates)
+        return ExtractionResult(candidates=candidates, todos=todos)
 
 
 class OpenAIExtractor:
