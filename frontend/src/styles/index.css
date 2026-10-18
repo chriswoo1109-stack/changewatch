@@ -21,6 +21,8 @@
 }
 
 html, body, #root { height: 100%; }
+/* 어르신 사용자를 고려해 기본 글씨를 16px → 17px로. Tailwind 크기(rem)가 모두 같은 비율로 커집니다 */
+html { font-size: 106.25%; }
 body {
   margin: 0;
   background: #f1f5f9;

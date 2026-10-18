@@ -4,6 +4,7 @@ import { confirmChange } from "../api/sessions";
 import AlertFlash from "../components/common/AlertFlash";
 import Button from "../components/common/Button";
 import ChangeCard from "../components/result/ChangeCard";
+import Icon from "../components/common/Icon";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useSessionStore } from "../stores/sessionStore";
 import type { AnalyzeResponse, Change, Todo } from "../types";
@@ -59,10 +60,11 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
         <Headline applied={applied} pending={pending} todos={todos} total={lastResult.changes.length} />
         {canSpeak && (applied.length > 0 || pending.length > 0 || todos.length > 0) && (
           <button
-            className="shrink-0 rounded-full bg-slate-100 px-3 py-2 text-sm"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-3 py-2 text-sm"
             onClick={() => speak([...[...applied, ...pending].map(describeChange), describeTodos(todos)].join(" "))}
           >
-            🔊 다시 듣기
+            <Icon name="volume" className="h-4 w-4" />
+            다시 듣기
           </button>
         )}
       </div>
@@ -71,7 +73,10 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
       </p>
       {myTurn && (
         <div className="rounded-2xl bg-amber-400 p-4 text-slate-900" role="status">
-          <p className="text-lg font-bold">🔔 내 차례예요! ({myTurn.matched})</p>
+          <p className="flex items-center gap-2 text-lg font-bold">
+            <Icon name="bell" className="h-6 w-6" />
+            내 차례예요! ({myTurn.matched})
+          </p>
           <p className="text-sm">“{myTurn.evidence}”</p>
         </div>
       )}
@@ -98,7 +103,10 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
           <ul className="space-y-2">
             {todos.map((t) => (
               <li key={t.id} className="rounded-2xl border border-slate-200 p-4">
-                <p className="font-semibold">☐ {t.text}</p>
+                <p className="flex items-start gap-2 font-semibold">
+                  <Icon name="square" className="mt-0.5 h-5 w-5 text-slate-400" />
+                  {t.text}
+                </p>
                 <p className="mt-1 text-xs text-slate-400">“{t.evidence}”</p>
               </li>
             ))}
@@ -148,7 +156,7 @@ function RetryBox({ text }: { text: string }) {
       <p className="text-sm font-semibold">들은 문장을 고쳐 주세요</p>
       <textarea className="h-20 w-full rounded-lg border bg-white p-3 text-sm" value={draft} onChange={(e) => setDraft(e.target.value)} />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button className="w-full" disabled={loading || !draft.trim()} onClick={() => analyze(draft)}>
+      <Button className="w-full" loading={loading} disabled={!draft.trim()} onClick={() => analyze(draft)}>
         {loading ? "분석 중..." : "다시 분석하기"}
       </Button>
     </div>

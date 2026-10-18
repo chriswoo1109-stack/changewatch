@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { confirmChange } from "../api/sessions";
+import Icon from "../components/common/Icon";
 import { useSessionStore } from "../stores/sessionStore";
 import { canSpeak, speak } from "../utils/speak";
 
@@ -38,12 +39,13 @@ export default function ShowPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white p-6">
       <div className="flex justify-between">
-        <button className="text-3xl text-slate-400" onClick={close} aria-label="닫기">
-          ×
+        <button className="text-slate-400" onClick={close} aria-label="닫기">
+          <Icon name="close" className="h-8 w-8" />
         </button>
         {canSpeak && (
-          <button className="rounded-full bg-slate-100 px-4 py-2 text-sm" onClick={() => speak(question)}>
-            🔊 소리로 읽기
+          <button className="flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-sm" onClick={() => speak(question)}>
+            <Icon name="volume" className="h-4 w-4" />
+            소리로 읽기
           </button>
         )}
       </div>

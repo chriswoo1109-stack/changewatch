@@ -11,7 +11,7 @@ export function buildShareText(title: string, facts: Fact[], recent: Map<string,
   }
   for (const c of canceledChanges(recent, facts)) lines.push(`· ${c.label}: 취소됨`);
   const left = todos.filter((t) => !t.done);
-  if (left.length) lines.push("", "남은 할 일", ...left.map((t) => `☐ ${t.text}`));
+  if (left.length) lines.push("", "남은 할 일", ...left.map((t) => `- ${t.text}`));
   return lines.join("\n");
 }
 

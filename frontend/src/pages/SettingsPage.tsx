@@ -3,6 +3,7 @@ import { updateSession } from "../api/sessions";
 import AlertFlash from "../components/common/AlertFlash";
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
+import Icon from "../components/common/Icon";
 import { useCurrentSession } from "../hooks/useCurrentSession";
 import { speechSupported } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
@@ -70,7 +71,13 @@ export default function SettingsPage() {
         {saveError && <p className="text-sm text-red-600">{saveError}</p>}
         <div className="flex gap-2">
           <Button className="flex-1" onClick={save}>
-            {saved ? "저장했어요 ✓" : "저장"}
+            {saved ? (
+              <span className="inline-flex items-center gap-1">
+                저장했어요 <Icon name="check" className="h-4 w-4" />
+              </span>
+            ) : (
+              "저장"
+            )}
           </Button>
           <Button variant="outline" onClick={() => setTestAlert(`내 차례예요! (${form.waitNumber || "37"}번)`)}>
             알림 시험
@@ -78,14 +85,24 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card className="space-y-1 text-sm">
+      <Card className="space-y-2 text-sm">
         <p className="font-semibold">이 기기에서 쓸 수 있는 기능</p>
-        <p>{speechSupported ? "✅" : "⚠"} 실시간 자막 {speechSupported ? "" : "(미지원 → 녹음 후 서버 인식 사용)"}</p>
-        <p>{canSpeak ? "✅" : "⚠"} 다시 읽어주기</p>
-        <p>{"share" in navigator ? "✅" : "⚠"} 공유하기 {"share" in navigator ? "" : "(미지원 → 복사로 대신)"}</p>
+        <Support ok={speechSupported} label="실시간 자막" fallback="미지원: 녹음 후 서버 인식 사용" />
+        <Support ok={canSpeak} label="다시 읽어주기" />
+        <Support ok={"share" in navigator} label="공유하기" fallback="미지원: 복사로 대신" />
       </Card>
 
       {testAlert && <AlertFlash message={testAlert} onClose={() => setTestAlert(null)} />}
     </div>
+  );
+}
+
+function Support({ ok, label, fallback }: { ok: boolean; label: string; fallback?: string }) {
+  return (
+    <p className="flex items-center gap-2">
+      <Icon name={ok ? "checkCircle" : "alertCircle"} className={`h-5 w-5 ${ok ? "text-brand-600" : "text-amber-500"}`} />
+      {label}
+      {!ok && fallback && <span className="text-slate-400">({fallback})</span>}
+    </p>
   );
 }

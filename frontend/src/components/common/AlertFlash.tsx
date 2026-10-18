@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Icon from "./Icon";
 
 interface Props {
   message: string;
@@ -28,7 +29,10 @@ export default function AlertFlash({ message, onClose }: Props) {
           onClick={onClose}
           className="w-full rounded-2xl bg-amber-500 p-4 text-left text-lg font-bold text-white shadow-xl"
         >
-          🔔 {message}
+          <span className="flex items-center gap-2">
+            <Icon name="bell" className="h-6 w-6" />
+            {message}
+          </span>
           <span className="mt-1 block text-xs font-normal text-amber-100">눌러서 닫기</span>
         </button>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { transcribeAudio } from "../api/announcements";
 import AlertFlash from "../components/common/AlertFlash";
+import Icon from "../components/common/Icon";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useCurrentSession } from "../hooks/useCurrentSession";
 import { useRecorder } from "../hooks/useRecorder";
@@ -116,7 +117,14 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
         {interim && <p className="text-3xl leading-snug text-slate-400">{interim}</p>}
         {listening && !interim && (
           <p className={`text-center text-xl font-semibold ${ready ? "text-green-400" : "text-slate-500"}`}>
-            {ready ? "🟢 지금 말씀하세요" : "마이크 준비 중... 잠시만요"}
+            {ready ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-green-400" />
+                지금 말씀하세요
+              </span>
+            ) : (
+              "마이크 준비 중... 잠시만요"
+            )}
           </p>
         )}
         <div ref={bottomRef} />
@@ -177,11 +185,11 @@ function RecordAndUpload({ sessionId }: { sessionId: string }) {
     >
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <div
-          className={`flex h-28 w-28 items-center justify-center rounded-full text-5xl ${
+          className={`flex h-28 w-28 items-center justify-center rounded-full ${
             recording ? "animate-pulse bg-red-500/80" : transcribing || loading ? "animate-pulse bg-brand-500/60" : "bg-slate-700"
           }`}
         >
-          🎙
+          <Icon name="mic" className="h-12 w-12" />
         </div>
         <p className="font-mono text-3xl">{mmss}</p>
         {status && <p className="whitespace-pre-line text-center text-sm text-slate-300">{status}</p>}
@@ -207,10 +215,15 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col items-center gap-4 bg-slate-900 p-5 text-white">
       <div className="flex w-full items-center justify-between">
-        <button className="text-2xl" onClick={() => navigate("/")} aria-label="닫기" disabled={busy}>
-          ×
+        <button onClick={() => navigate("/")} aria-label="닫기" disabled={busy}>
+          <Icon name="close" className="h-7 w-7" />
         </button>
-        {recording && <span className="animate-pulse text-sm text-red-400">● 듣는 중</span>}
+        {recording && (
+          <span className="flex animate-pulse items-center gap-1.5 text-sm text-red-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            듣는 중
+          </span>
+        )}
       </div>
       <p className="text-center text-slate-300">{title}</p>
       {children}
@@ -230,12 +243,14 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
         </div>
       )}
       {!recording ? (
-        <button className="mb-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
-          {busy ? "처리 중..." : "🎙 듣기 시작"}
+        <button className="mb-2 flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
+          <Icon name={busy ? "spinner" : "mic"} className="h-5 w-5" />
+          {busy ? "처리 중..." : "듣기 시작"}
         </button>
       ) : (
-        <button className="mb-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-red-600" onClick={onStop}>
-          ■ 중지하고 분석하기
+        <button className="mb-2 flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-red-600" onClick={onStop}>
+          <Icon name="stop" className="h-5 w-5" />
+          중지하고 분석하기
         </button>
       )}
     </div>

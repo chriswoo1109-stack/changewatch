@@ -1,5 +1,6 @@
 import type { Fact } from "../../types";
 import Card from "../common/Card";
+import Icon from "../common/Icon";
 import {
   CALENDAR_KEYS,
   detectPlatform,
@@ -27,28 +28,30 @@ export default function CalendarList({ facts, title }: { facts: Fact[]; title: s
         const name = `${title} · ${fact.label}`;
         const desc = `${fact.label}: ${fact.value} (체인지워치에서 추가)`;
         return (
-          <li key={fact.key} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-3">
-            <span className="text-sm">
-              <span className="block font-semibold">{fact.label}</span>
-              <span className="text-slate-500">{formatParsed(parsed!)}</span>
-            </span>
-            <span className="flex shrink-0 gap-1.5">
+          <li key={fact.key} className="space-y-2 rounded-xl bg-slate-50 p-3">
+            <p className="text-sm">
+              <span className="font-semibold">{fact.label}</span>
+              <span className="ml-2 text-slate-500">{formatParsed(parsed!)}</span>
+            </p>
+            <span className="flex gap-1.5">
               {platform !== "android" && (
                 <button
-                  className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
+                  className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
                   onClick={() => downloadIcs(name, parsed!, desc)}
                 >
-                  {platform === "ios" ? "📅 캘린더에 추가" : ".ics 받기"}
+                  <Icon name="calendar" className="h-4 w-4" />
+                  {platform === "ios" ? "캘린더에 추가" : ".ics 받기"}
                 </button>
               )}
               {platform !== "ios" && (
                 <a
-                  className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
+                  className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
                   href={googleCalendarUrl(name, parsed!, desc)}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {platform === "android" ? "📅 캘린더에 추가" : "구글 캘린더"}
+                  <Icon name="calendar" className="h-4 w-4" />
+                  {platform === "android" ? "캘린더에 추가" : "구글 캘린더"}
                 </a>
               )}
             </span>

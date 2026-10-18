@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
+import Icon from "../components/common/Icon";
+import PendingBanner from "../components/common/PendingBanner";
 import CalendarList from "../components/session/CalendarList";
 import FactList from "../components/session/FactList";
 import TodoList from "../components/session/TodoList";
@@ -40,23 +42,21 @@ export default function SessionPage() {
         <p className="text-sm text-slate-500">{session.title}</p>
       </header>
 
-      {pendingCount > 0 && (
-        <Link to="/confirm" className="block rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">
-          ⚠ 확인이 필요한 안내 {pendingCount}건이 있어요 →
-        </Link>
-      )}
+      <PendingBanner count={pendingCount} />
 
       <Card>
         <p className="text-sm font-semibold">지금 유효한 정보</p>
         <div className="mb-1 mt-2 flex flex-wrap gap-1.5">
           <div className="contents">
             {canSpeak && (
-              <button className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={() => speak(describeFacts(session.facts))}>
-                🔊 읽어주기
+              <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-sm" onClick={() => speak(describeFacts(session.facts))}>
+                <Icon name="volume" className="h-4 w-4" />
+                읽어주기
               </button>
             )}
-            <button className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={share}>
-              📤 가족에게 공유
+            <button className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-sm" onClick={share}>
+              <Icon name="share" className="h-4 w-4" />
+              가족에게 공유
             </button>
           </div>
         </div>
@@ -85,7 +85,10 @@ export default function SessionPage() {
 
       {session.facts.length > 0 && (
         <Card>
-          <p className="mb-2 text-sm font-semibold">🙋 직원에게 확인하기</p>
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+            <Icon name="ask" className="h-4 w-4 text-brand-600" />
+            직원에게 확인하기
+          </p>
           <p className="mb-2 text-xs text-slate-400">누르면 큰 글씨로 보여드려요. 화면을 직원에게 보여주세요.</p>
           <div className="flex flex-wrap gap-2">
             {session.facts.map((f) => (
