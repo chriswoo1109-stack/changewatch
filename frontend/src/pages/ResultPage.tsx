@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { confirmChange } from "../api/sessions";
 import AlertFlash from "../components/common/AlertFlash";
@@ -6,8 +6,8 @@ import Button from "../components/common/Button";
 import ChangeCard from "../components/result/ChangeCard";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useSessionStore } from "../stores/sessionStore";
-import type { AnalyzeResponse, Change } from "../types";
-import { canSpeak, describeChange, speak } from "../utils/speak";
+import type { AnalyzeResponse, Change, Todo } from "../types";
+import { canSpeak, describeChange, describeTodos, speak } from "../utils/speak";
 
 // 시안 4번(AI 요약 결과) + 12번(확인 요청)
 export default function ResultPage() {
@@ -32,6 +32,13 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
   const [showIgnored, setShowIgnored] = useState(false);
   // 화면에 들어왔을 때 한 번만 깜빡여 알립니다.
   const [alert, setAlert] = useState(() => alertMessage(lastResult));
+  const myTurn = lastResult.my_turn;
+  const todos = lastResult.todos ?? [];
+
+  // 내 차례는 화면을 안 보고 있어도 알 수 있게 소리로도 알립니다.
+  useEffect(() => {
+    if (myTurn) speak(`내 차례입니다. ${myTurn.evidence}`);
+  }, [myTurn]);
 
   const onConfirm = async (changeId: number, approve: boolean) => {
     const updated = await confirmChange(changeId, approve);
@@ -49,11 +56,11 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
     <div className="space-y-4 p-5">
       {alert && <AlertFlash message={alert} onClose={() => setAlert(null)} />}
       <div className="flex items-start justify-between gap-2">
-        <Headline applied={applied} pending={pending} total={lastResult.changes.length} />
-        {canSpeak && [...pending, ...applied].length > 0 && (
+        <Headline applied={applied} pending={pending} todos={todos} total={lastResult.changes.length} />
+        {canSpeak && (applied.length > 0 || pending.length > 0 || todos.length > 0) && (
           <button
             className="shrink-0 rounded-full bg-slate-100 px-3 py-2 text-sm"
-            onClick={() => speak([...applied, ...pending].map(describeChange).join(" "))}
+            onClick={() => speak([...[...applied, ...pending].map(describeChange), describeTodos(todos)].join(" "))}
           >
             🔊 다시 듣기
           </button>
@@ -62,7 +69,13 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
       <p className="whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
         <span className="mb-1 block text-xs text-slate-400">들은 안내</span>“{lastResult.text}”
       </p>
-      {applied.length === 0 && pending.length === 0 && <RetryBox text={lastResult.text} />}
+      {myTurn && (
+        <div className="rounded-2xl bg-amber-400 p-4 text-slate-900" role="status">
+          <p className="text-lg font-bold">🔔 내 차례예요! ({myTurn.matched})</p>
+          <p className="text-sm">“{myTurn.evidence}”</p>
+        </div>
+      )}
+      {applied.length === 0 && pending.length === 0 && todos.length === 0 && !myTurn && <RetryBox text={lastResult.text} />}
 
       {pending.length > 0 && (
         <Section title="확인이 필요해요">
@@ -77,6 +90,20 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
           {applied.map((c) => (
             <ChangeCard key={c.id} change={c} />
           ))}
+        </Section>
+      )}
+
+      {todos.length > 0 && (
+        <Section title="할 일이 생겼어요">
+          <ul className="space-y-2">
+            {todos.map((t) => (
+              <li key={t.id} className="rounded-2xl border border-slate-200 p-4">
+                <p className="font-semibold">☐ {t.text}</p>
+                <p className="mt-1 text-xs text-slate-400">“{t.evidence}”</p>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-slate-400">오늘의 안내 화면에서 체크할 수 있어요.</p>
         </Section>
       )}
 
@@ -131,6 +158,7 @@ function RetryBox({ text }: { text: string }) {
 /** 바뀐 정보나 확인할 안내가 있을 때만 알림 문구를 만듭니다. */
 function alertMessage(r: AnalyzeResponse | null) {
   if (!r) return null;
+  if (r.my_turn) return `내 차례예요! (${r.my_turn.matched})`;
   const pending = r.changes.filter((c) => c.status === "pending").length;
   const changed = r.changes.filter((c) => c.status === "applied" && c.change_type !== "new").length;
   if (changed > 0) return `바뀐 정보가 ${changed}건 있어요!`;
@@ -138,7 +166,7 @@ function alertMessage(r: AnalyzeResponse | null) {
   return null;
 }
 
-function Headline({ applied, pending, total }: { applied: Change[]; pending: Change[]; total: number }) {
+function Headline({ applied, pending, todos, total }: { applied: Change[]; pending: Change[]; todos: Todo[]; total: number }) {
   // 실제로 값이 바뀐 것(변경·정정·취소)과 처음 정리된 것(신규)을 나눠서 말해 줍니다.
   const changed = applied.filter((c) => c.change_type !== "new").length;
   const added = applied.length - changed;
@@ -147,9 +175,14 @@ function Headline({ applied, pending, total }: { applied: Change[]; pending: Cha
   if (changed > 0) title = `바뀐 정보가 ${changed}건 있어요`;
   else if (added > 0) title = `새 안내 ${added}건을 정리했어요`;
   else if (pending.length > 0) title = "확인이 필요한 안내가 있어요";
+  else if (todos.length > 0) title = `할 일 ${todos.length}건이 생겼어요`;
   else if (total === 0) title = "추적할 만한 안내를 찾지 못했어요";
 
-  const sub = [changed > 0 && added > 0 && `새 안내 ${added}건`, pending.length > 0 && `확인 필요 ${pending.length}건`]
+  const sub = [
+    changed > 0 && added > 0 && `새 안내 ${added}건`,
+    pending.length > 0 && `확인 필요 ${pending.length}건`,
+    todos.length > 0 && (changed > 0 || added > 0 || pending.length > 0) && `할 일 ${todos.length}건`,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -158,7 +191,7 @@ function Headline({ applied, pending, total }: { applied: Change[]; pending: Cha
       <p className="text-xs font-semibold text-blue-600">AI 정리 결과</p>
       <h1 className="text-xl font-bold">{title}</h1>
       {sub && <p className="text-sm text-slate-500">{sub}</p>}
-      {total > 0 && changed === 0 && added === 0 && pending.length === 0 && (
+      {total > 0 && changed === 0 && added === 0 && pending.length === 0 && todos.length === 0 && (
         <p className="text-sm text-slate-500">기존 정보를 그대로 유지합니다.</p>
       )}
     </header>

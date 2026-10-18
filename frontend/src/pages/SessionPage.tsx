@@ -25,7 +25,7 @@ export default function SessionPage() {
 
   const share = async () => {
     try {
-      const r = await shareText(session.title, buildShareText(session.title, session.facts, recent));
+      const r = await shareText(session.title, buildShareText(session.title, session.facts, recent, session.todos));
       if (r === "copied") setToast("복사했어요. 메신저에 붙여넣어 보내세요.");
     } catch {
       setToast("공유하지 못했어요.");
@@ -78,7 +78,7 @@ export default function SessionPage() {
 
       <Card>
         <p className="mb-2 text-sm font-semibold">해야 할 일</p>
-        <TodoList facts={session.facts} />
+        <TodoList todos={session.todos} />
       </Card>
 
       <CalendarList facts={session.facts} title={session.title} />

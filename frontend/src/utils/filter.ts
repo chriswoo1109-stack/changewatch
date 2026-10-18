@@ -1,6 +1,8 @@
 // 안내문 필터: 소음·잡담 대신 "안내처럼 보이는 문장"만 분석에 보냅니다.
 // - 숫자(번호·시간)가 있거나 취소 안내면 안내(notice)
-//   "진료실", "보건 진료실도 이동하세요"처럼 값이 없는 조각은 분석해도 엉뚱한 값이 저장될 뿐이라 뺍니다.
+// - "처방전은 약국에 제출하세요"처럼 할 일 안내도 안내(notice) → 서버가 할 일(todos)로 뽑습니다
+//   단, "보건 진료실도 이동하세요"처럼 추적 항목(진료실 등)인데 값(숫자)이 없는 문장은
+//   분석해도 엉뚱한 값이 저장될 뿐이라 뺍니다.
 // - 내 정보 키워드(대기번호·이름)가 있으면 내 안내(mine) → 알림 대상
 // - 나머지는 소음(noise) → 분석하지 않음
 
@@ -13,6 +15,9 @@ export interface MyKeywords {
 
 // 값(숫자)이 없어도 의미가 있는 안내: "오늘 검사는 취소되었습니다"
 const NO_VALUE_WORDS = ["취소"];
+
+// 할 일 안내 끝맺음. backend/app/services/llm_extractor.py의 TODO_RE와 맞춥니다.
+const TODO_ENDING = /(하세요|해 주세요|해주세요|하십시오)[.!?]?$/;
 
 // 추적 항목 키워드 (backend/app/domains/hospital.json의 keywords와 맞춥니다)
 const TRACK_WORDS = ["진료실", "순번", "대기번호", "대기 번호", "검사", "진료 시간", "예약", "복용", "약은", "준비물", "지참"];
@@ -68,6 +73,7 @@ export function hasMyKeyword(sentence: string, my: MyKeywords) {
 export function classifySentence(sentence: string, my: MyKeywords): SentenceKind {
   if (hasMyKeyword(sentence, my)) return "mine";
   if (/\d/.test(sentence) || NO_VALUE_WORDS.some((w) => sentence.includes(w))) return "notice";
+  if (TODO_ENDING.test(sentence.trim()) && !TRACK_WORDS.some((w) => sentence.includes(w))) return "notice";
   return "noise";
 }
 

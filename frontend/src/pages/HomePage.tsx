@@ -14,16 +14,18 @@ const EXAMPLES = [
   "5번 진료실은 지금 혼잡합니다.",
   "진료실이 5번으로 변경되었습니다.",
   "아마 진료실이 7번일 거예요.",
+  "처방전은 약국에 제출하세요.",
 ];
 
 // 시안 2번(메인) + 6번(장소 선택)
 export default function HomePage() {
   const navigate = useNavigate();
-  const { setSessionId } = useSessionStore();
+  const { setSessionId, myKeywords, setMyKeywords } = useSessionStore();
   const { session, error: sessionError } = useCurrentSession();
   const { history } = useHistory();
   const { analyze, loading, error } = useAnalyze();
   const [title, setTitle] = useState("오늘 병원 방문");
+  const [myNumber, setMyNumber] = useState(myKeywords.waitNumber);
   const [text, setText] = useState("");
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -45,7 +47,12 @@ export default function HomePage() {
     setStarting(true);
     setStartError(null);
     try {
-      const s = await createSession(title.trim() || "오늘 병원 방문", "hospital");
+      // 내 번호·이름을 함께 보내면 서버가 분석할 때 내 차례(my_turn)를 알려줍니다.
+      const s = await createSession(title.trim() || "오늘 병원 방문", "hospital", {
+        my_number: myNumber.trim() || null,
+        my_name: myKeywords.name.trim() || null,
+      });
+      setMyKeywords({ ...myKeywords, waitNumber: myNumber.trim() });
       setSessionId(s.id);
     } catch {
       setStartError("방문을 시작하지 못했습니다. 백엔드가 실행 중인지 확인하세요.");
@@ -82,6 +89,13 @@ export default function HomePage() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="방문 이름 (예: 수원 OO병원)"
           />
+          <input
+            className="w-full rounded-lg border p-3"
+            inputMode="numeric"
+            value={myNumber}
+            onChange={(e) => setMyNumber(e.target.value)}
+            placeholder="내 대기번호 (선택, 예: 37) — 불리면 알려드려요"
+          />
           {startError && <p className="text-sm text-red-600">{startError}</p>}
           <Button className="w-full" onClick={start} disabled={starting}>
             {starting ? "시작하는 중..." : "새 방문 시작하기"}
@@ -94,6 +108,11 @@ export default function HomePage() {
               <div>
                 <p className="text-xs text-slate-400">현재 방문</p>
                 <p className="font-semibold">{session.title}</p>
+                {(session.my_number || session.my_name) && (
+                  <p className="text-xs text-slate-500">
+                    🔔 {[session.my_number && `${session.my_number}번`, session.my_name].filter(Boolean).join(" · ")} 불리면 알림
+                  </p>
+                )}
               </div>
               <button className="text-xs text-slate-400 underline" onClick={endVisit}>
                 방문 종료
