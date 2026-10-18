@@ -25,7 +25,7 @@ export default function RecordingPage() {
     return (
       <div className="space-y-3 p-5">
         <p className="text-slate-500">먼저 홈에서 방문을 시작해 주세요.</p>
-        <Link to="/" className="text-sm text-blue-600 underline">
+        <Link to="/" className="text-sm text-brand-600 underline">
           홈으로
         </Link>
       </div>
@@ -178,7 +178,7 @@ function RecordAndUpload({ sessionId }: { sessionId: string }) {
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <div
           className={`flex h-28 w-28 items-center justify-center rounded-full text-5xl ${
-            recording ? "animate-pulse bg-red-500/80" : transcribing || loading ? "animate-pulse bg-blue-500/60" : "bg-slate-700"
+            recording ? "animate-pulse bg-red-500/80" : transcribing || loading ? "animate-pulse bg-brand-500/60" : "bg-slate-700"
           }`}
         >
           🎙
@@ -230,7 +230,7 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
         </div>
       )}
       {!recording ? (
-        <button className="mb-2 rounded-full bg-blue-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
+        <button className="mb-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
           {busy ? "처리 중..." : "🎙 듣기 시작"}
         </button>
       ) : (

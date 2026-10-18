@@ -20,7 +20,7 @@ export default function FactList({ facts, recent }: Props) {
                 {old && <span className="mr-2 text-sm font-normal text-slate-400 line-through">{old}</span>}
                 {f.value}
               </span>
-              <span className={`text-xs ${old ? "font-semibold text-blue-600" : "text-slate-400"}`}>
+              <span className={`text-xs ${old ? "font-semibold text-brand-600" : "text-slate-400"}`}>
                 {old ? "바뀐 정보 · " : ""}
                 {formatTime(f.updated_at)}
               </span>

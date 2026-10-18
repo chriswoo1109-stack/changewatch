@@ -66,7 +66,7 @@ export default function ShowPage() {
               아니래요
             </button>
             <button
-              className="flex-1 rounded-2xl bg-blue-600 py-5 text-xl font-bold text-white disabled:bg-slate-300"
+              className="flex-1 rounded-2xl bg-brand-600 py-5 text-xl font-bold text-white disabled:bg-slate-300"
               disabled={busy}
               onClick={() => answer(true)}
             >

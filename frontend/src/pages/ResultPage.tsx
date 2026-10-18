@@ -16,7 +16,7 @@ export default function ResultPage() {
     return (
       <div className="space-y-3 p-5">
         <p className="text-slate-500">분석 결과가 없습니다.</p>
-        <Link to="/" className="text-sm text-blue-600 underline">
+        <Link to="/" className="text-sm text-brand-600 underline">
           홈에서 안내 입력하기
         </Link>
       </div>
@@ -138,13 +138,13 @@ function RetryBox({ text }: { text: string }) {
 
   if (!open) {
     return (
-      <button className="text-sm text-blue-600 underline" onClick={() => setOpen(true)}>
+      <button className="text-sm text-brand-600 underline" onClick={() => setOpen(true)}>
         잘못 알아들었나요? 고쳐서 다시 분석하기
       </button>
     );
   }
   return (
-    <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50/50 p-3">
+    <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50/50 p-3">
       <p className="text-sm font-semibold">들은 문장을 고쳐 주세요</p>
       <textarea className="h-20 w-full rounded-lg border bg-white p-3 text-sm" value={draft} onChange={(e) => setDraft(e.target.value)} />
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -188,7 +188,7 @@ function Headline({ applied, pending, todos, total }: { applied: Change[]; pendi
 
   return (
     <header>
-      <p className="text-xs font-semibold text-blue-600">AI 정리 결과</p>
+      <p className="text-xs font-semibold text-brand-600">AI 정리 결과</p>
       <h1 className="text-xl font-bold">{title}</h1>
       {sub && <p className="text-sm text-slate-500">{sub}</p>}
       {total > 0 && changed === 0 && added === 0 && pending.length === 0 && todos.length === 0 && (

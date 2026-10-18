@@ -35,7 +35,7 @@ export default function CalendarList({ facts, title }: { facts: Fact[]; title: s
             <span className="flex shrink-0 gap-1.5">
               {platform !== "android" && (
                 <button
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+                  className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
                   onClick={() => downloadIcs(name, parsed!, desc)}
                 >
                   {platform === "ios" ? "📅 캘린더에 추가" : ".ics 받기"}
@@ -43,7 +43,7 @@ export default function CalendarList({ facts, title }: { facts: Fact[]; title: s
               )}
               {platform !== "ios" && (
                 <a
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+                  className="rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white"
                   href={googleCalendarUrl(name, parsed!, desc)}
                   target="_blank"
                   rel="noreferrer"

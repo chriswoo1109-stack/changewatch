@@ -70,7 +70,9 @@ export default function HomePage() {
   return (
     <div className="space-y-5 p-5">
       <header>
-        <h1 className="text-2xl font-bold">체인지워치</h1>
+        <h1 className="text-2xl font-bold">
+          체인지<span className="text-brand-600">워치</span>
+        </h1>
         <p className="text-sm text-slate-500">들은 안내를 정리하고, 바뀐 정보만 알려드려요.</p>
       </header>
 
@@ -80,7 +82,7 @@ export default function HomePage() {
         <Card className="space-y-3">
           <p className="font-semibold">어디에서 들으시나요?</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <span className="rounded-lg border-2 border-blue-600 p-3 text-center font-semibold text-blue-600">🏥 병원</span>
+            <span className="rounded-lg border-2 border-brand-600 p-3 text-center font-semibold text-brand-600">🏥 병원</span>
             <span className="rounded-lg border p-3 text-center text-slate-300">은행 (준비 중)</span>
           </div>
           <input
@@ -121,7 +123,7 @@ export default function HomePage() {
             {session.facts.length > 0 && (
               <Link to="/session" className="flex flex-wrap gap-1.5 pt-1">
                 {session.facts.map((f) => (
-                  <span key={f.key} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">
+                  <span key={f.key} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs text-brand-700">
                     {f.label} <b>{f.value}</b>
                   </span>
                 ))}
@@ -136,7 +138,7 @@ export default function HomePage() {
 
           <button
             onClick={() => navigate("/record")}
-            className="mx-auto flex h-36 w-36 flex-col items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-200 active:scale-95"
+            className="mx-auto flex h-36 w-36 flex-col items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-200 active:scale-95"
           >
             <span className="text-4xl">🎙</span>
             <span className="mt-1 font-semibold">듣기 시작하기</span>

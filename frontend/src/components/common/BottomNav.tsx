@@ -16,7 +16,7 @@ export default function BottomNav() {
           to={t.to}
           end={t.to === "/"}
           className={({ isActive }) =>
-            `flex flex-1 flex-col items-center py-2 text-xs ${isActive ? "text-blue-600" : "text-slate-400"}`
+            `flex flex-1 flex-col items-center py-2 text-xs ${isActive ? "text-brand-600" : "text-slate-400"}`
           }
         >
           <span className="text-lg leading-none">{t.icon}</span>

@@ -47,15 +47,15 @@ export default function SessionPage() {
       )}
 
       <Card>
-        <div className="mb-1 flex items-center justify-between">
-          <p className="text-sm font-semibold">지금 유효한 정보</p>
-          <div className="flex gap-1.5">
+        <p className="text-sm font-semibold">지금 유효한 정보</p>
+        <div className="mb-1 mt-2 flex flex-wrap gap-1.5">
+          <div className="contents">
             {canSpeak && (
-              <button className="rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={() => speak(describeFacts(session.facts))}>
+              <button className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={() => speak(describeFacts(session.facts))}>
                 🔊 읽어주기
               </button>
             )}
-            <button className="rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={share}>
+            <button className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-xs" onClick={share}>
               📤 가족에게 공유
             </button>
           </div>
@@ -101,7 +101,7 @@ export default function SessionPage() {
         </Card>
       )}
 
-      <Link to="/" className="block rounded-xl border border-blue-600 py-3 text-center font-semibold text-blue-600">
+      <Link to="/" className="block rounded-xl border border-brand-600 py-3 text-center font-semibold text-brand-600">
         새 안내 듣기
       </Link>
 
@@ -117,7 +117,7 @@ function NoSession() {
     <div className="space-y-3 p-5">
       <h1 className="text-xl font-bold">오늘의 안내 정리</h1>
       <p className="text-slate-500">진행 중인 방문이 없습니다.</p>
-      <Link to="/" className="inline-block text-sm text-blue-600 underline">
+      <Link to="/" className="inline-block text-sm text-brand-600 underline">
         홈에서 방문 시작하기
       </Link>
     </div>

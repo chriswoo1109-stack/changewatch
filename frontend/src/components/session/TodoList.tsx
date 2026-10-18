@@ -35,7 +35,7 @@ export default function TodoList({ todos }: { todos: Todo[] }) {
         {items.map((t) => (
           <li key={t.id}>
             <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3">
-              <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-blue-600" checked={t.done} onChange={() => toggle(t)} />
+              <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-brand-600" checked={t.done} onChange={() => toggle(t)} />
               <span className={t.done ? "text-slate-400 line-through" : ""}>
                 {t.text}
                 <span className="mt-0.5 block text-xs text-slate-400">“{t.evidence}”</span>

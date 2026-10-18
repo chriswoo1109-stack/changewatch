@@ -75,7 +75,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
               아니에요
             </button>
             <button
-              className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:bg-slate-300"
+              className="flex-1 rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:bg-slate-300"
               disabled={busy}
               onClick={() => confirm(true)}
             >
@@ -113,13 +113,13 @@ function ValueLine({ change }: { change: Change }) {
   }
   const muted = change.status === "ignored" || change.status === "rejected";
   if (!change.old_value) {
-    return <p className={`text-lg font-bold ${muted ? "text-slate-400" : "text-blue-600"}`}>{change.new_value ?? "-"}</p>;
+    return <p className={`text-lg font-bold ${muted ? "text-slate-400" : "text-brand-600"}`}>{change.new_value ?? "-"}</p>;
   }
   return (
     <p className="text-lg">
       <span className={muted ? "font-bold text-slate-700" : "text-slate-400 line-through"}>{change.old_value}</span>
       <span className="mx-2 text-slate-400">{muted ? "유지 ·" : "→"}</span>
-      <span className={muted ? "text-slate-400" : "font-bold text-blue-600"}>
+      <span className={muted ? "text-slate-400" : "font-bold text-brand-600"}>
         {muted ? `${change.new_value} ${change.status === "rejected" ? "거절" : "언급"}` : change.new_value}
       </span>
     </p>
