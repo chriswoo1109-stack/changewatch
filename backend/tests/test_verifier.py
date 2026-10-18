@@ -63,6 +63,29 @@ def test_rejects_evidence_not_in_text():
     assert d.status == "pending"
 
 
+@pytest.mark.parametrize("text, my_number, my_name, expected", [
+    ("대기번호 12번 환자분 7번 진료실로 오세요.", "37", None, "ignored"),  # 다른 번호 → 무시
+    ("김철수님 2번 진료실로 들어오세요.", "37", "홍길동", "ignored"),     # 다른 이름 → 무시
+    ("12번 환자분 7번 진료실로 오세요.", None, None, "pending"),          # 내 번호를 모름 → 확인 요청
+    ("37번 환자분 7번 진료실로 오세요.", "37", None, "applied"),          # 내 번호
+    ("홍길동님 7번 진료실로 오세요.", None, "홍길동", "applied"),          # 내 이름
+    ("진료실이 7번으로 변경되었습니다.", "37", None, "applied"),          # 아무도 부르지 않음
+    ("선생님이 7번 진료실로 오시래요.", "37", None, "applied"),            # 사람 이름이 아님
+])
+def test_call_to_someone_else(text, my_number, my_name, expected):
+    c = Candidate(key="room", value="7번", change_type="change", evidence=text, confidence=0.9)
+    [d] = verify([c], {"room": "5번"}, text, KEYS, my_number=my_number, my_name=my_name)
+    assert d.status == expected
+
+
+def test_call_check_uses_full_sentence_when_evidence_is_cut():
+    # 실제 AI가 근거를 문장 일부만 잘라 준 사례
+    text = "대기번호 12번 환자분 7번 진료실로 오세요."
+    c = Candidate(key="room", value="7번", change_type="change", evidence="7번 진료실로 오세요", confidence=0.9)
+    [d] = verify([c], {"room": "5번"}, text, KEYS, my_number="37")
+    assert d.status == "ignored"
+
+
 def test_low_confidence_needs_confirmation():
     c = Candidate(key="room", value="5번", change_type="change", evidence="진료실이 5번입니다", confidence=0.4)
     [d] = verify([c], {"room": "3번"}, "진료실이 5번입니다", KEYS)
