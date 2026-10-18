@@ -7,3 +7,21 @@ body {
   font-family: "Pretendard", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* 화면 깜빡임 알림: 1초에 1번, 3회 (빛 과민 기준인 초당 3회보다 느리게) */
+@keyframes cw-flash {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.85; }
+}
+.cw-flash {
+  animation: cw-flash 1s ease-in-out 3;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* 움직임 줄이기 설정 사용자: 깜빡이지 않고 테두리만 강조 */
+  .cw-flash {
+    animation: none;
+    opacity: 1;
+    background: transparent !important;
+    box-shadow: inset 0 0 0 8px #f59e0b;
+  }
+}
