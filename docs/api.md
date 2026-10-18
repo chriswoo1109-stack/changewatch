@@ -62,6 +62,9 @@
 }
 ```
 
+- AI 분석이 실패하면(OpenAI 오류, 응답 형식 오류) `502` + `"AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요"`.
+  이때 안내 원문과 변경 이력은 저장되지 않으므로, 프론트는 같은 텍스트로 다시 시도하게 하면 됩니다.
+
 ## 4. 음성 → 텍스트
 `POST /sessions/{session_id}/transcribe` (multipart/form-data, 필드 이름 `file`)
 ```json

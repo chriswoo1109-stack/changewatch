@@ -6,13 +6,18 @@
 """
 
 import json
+import logging
 import re
 from pathlib import Path
+
+from pydantic import ValidationError
 
 from app.core.config import settings
 from app.domains import load_domain
 from app.schemas.analysis import Candidate, ExtractionResult
 from app.services.normalize import normalize_value
+
+logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
@@ -81,15 +86,56 @@ class OpenAIExtractor:
             facts=json.dumps(facts, ensure_ascii=False) if facts else "(없음)",
             text=text,
         )
-        response = self.client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-            temperature=0,
-        )
-        content = response.choices[0].message.content or "{}"
-        # Pydantic이 형식을 검증합니다. 형식이 틀리면 예외가 발생합니다.
-        return ExtractionResult.model_validate_json(content)
+        try:
+            response = self.client.chat.completions.create(
+                model=settings.openai_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                temperature=0,
+            )
+        except Exception as e:  # 네트워크·키·요금 한도 등 OpenAI 호출 실패
+            raise ExtractionError(f"OpenAI 호출 실패: {e}") from e
+        return parse_candidates(response.choices[0].message.content or "{}")
+
+
+class ExtractionError(Exception):
+    """AI 분석 자체가 실패한 경우. 라우트에서 502로 바꿔 사용자에게 알립니다."""
+
+
+def parse_candidates(content: str) -> ExtractionResult:
+    """AI 응답을 후보 목록으로 바꿉니다.
+
+    형식이 틀린 후보 하나 때문에 전체 분석이 실패하지 않도록, 고칠 수 있는 건 고치고
+    고칠 수 없는 후보만 버립니다. 버려진 후보는 저장되지 않으므로 Fact에 영향이 없습니다.
+    """
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise ExtractionError("AI 응답이 JSON 형식이 아닙니다") from e
+
+    raw = data.get("candidates") if isinstance(data, dict) else None
+    if not isinstance(raw, list):
+        return ExtractionResult(candidates=[])
+
+    candidates: list[Candidate] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        item = dict(item)
+        if isinstance(item.get("change_type"), str):
+            item["change_type"] = item["change_type"].strip().lower()  # "Change" → "change"
+        if isinstance(item.get("value"), (int, float)) and not isinstance(item["value"], bool):
+            item["value"] = str(item["value"])  # 5 → "5"
+        if item.get("value") == "":
+            item["value"] = None
+        conf = item.get("confidence")
+        if isinstance(conf, (int, float)) and 1 < conf <= 100:
+            item["confidence"] = conf / 100  # 95 → 0.95 (퍼센트로 답한 경우)
+        try:
+            candidates.append(Candidate.model_validate(item))
+        except ValidationError as e:
+            logger.warning("형식이 틀린 AI 후보를 버립니다: %s (%s)", item, e.errors()[0]["msg"])
+    return ExtractionResult(candidates=candidates)
 
 
 def get_extractor():

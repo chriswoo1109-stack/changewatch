@@ -21,7 +21,7 @@
 
   {"name": "정정 - 아까 말씀드린", "tags": ["correction"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "아까 3번이라고 말씀드렸는데 5번 진료실입니다.", "expect": {"room": ["applied", "5번"]}},
   {"name": "정정 - 잘못 안내 (두 문장)", "tags": ["correction"], "mock_xfail": true, "facts": {"wait_number": "12번"}, "text": "대기 번호를 잘못 안내드렸습니다. 15번입니다.", "expect": {"wait_number": ["applied", "15번"]}},
-  {"name": "정정 - 값 없음", "tags": ["correction"], "mock_xfail": true, "facts": {"exam_time": "오후 2시"}, "text": "검사 시간 정정 안내 드립니다.", "expect": {"exam_time": [["pending", null], "오후 2시"]}},
+  {"name": "정정 - 값 없음", "tags": ["correction"], "facts": {"exam_time": "오후 2시"}, "text": "검사 시간 정정 안내 드립니다.", "expect": {"exam_time": [["pending", null], "오후 2시"]}},
 
   {"name": "언급 - 다른 진료실 소개", "tags": ["mention"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "옆 7번 진료실은 소아과입니다.", "expect": {"room": [["ignored", null], "3번"]}},
   {"name": "언급 - 다른 환자 예약 시간", "tags": ["mention"], "facts": {"visit_time": "오전 10시"}, "text": "오전 11시 예약 환자분들은 접수처로 와 주세요.", "expect": {"visit_time": [["ignored", null], "오전 10시"]}},

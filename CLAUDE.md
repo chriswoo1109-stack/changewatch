@@ -85,7 +85,8 @@ changewatch/
 3. mention → ignored (기존 값 유지)
 4. uncertain 또는 confidence < 0.7 → pending
 5. cancel: 기존 값 있으면 applied(Fact 삭제), 없으면 ignored
-6. 값 없음 → pending / 기존과 같은 값 → ignored
+6. 값 없음 → pending / 값이 문장 형태(30자 초과 또는 "~니다·~세요" 등으로 끝남) → pending / 기존과 같은 값 → ignored
+   (비교 전 값 정규화: 한글 숫자 → 숫자, 시각 항목은 운영 시간 기준 오전/오후 보정 — `services/normalize.py`)
 7. new인데 다른 기존 값이 있음 → pending
 8. 그 외 → applied
 

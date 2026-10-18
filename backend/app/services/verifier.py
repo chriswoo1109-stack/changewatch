@@ -4,11 +4,21 @@ AI가 제안한 변경 후보를 바로 저장하지 않고, 아래 규칙을 �
 불확실하면 자동 반영하지 않고 사용자에게 확인을 요청합니다(pending).
 """
 
+import re
 from dataclasses import dataclass
 
 from app.core.config import settings
 from app.schemas.analysis import Candidate
 from app.services.normalize import fill_meridiem, normalize_value
+
+
+# 값은 "5번", "오후 3시"처럼 짧은 정보여야 한다. 문장 끝맺음이 있거나 너무 길면 문장을 통째로 넣은 것이다.
+SENTENCE_END_RE = re.compile(r"(니다|세요|어요|아요|에요|예요|해요|까요|죠)[.!?]?$")
+MAX_VALUE_LEN = 30
+
+
+def looks_like_sentence(value: str) -> bool:
+    return len(value) > MAX_VALUE_LEN or bool(SENTENCE_END_RE.search(value))
 
 
 @dataclass
@@ -67,9 +77,11 @@ def verify(
                 decide("ignored", "취소할 기존 정보가 없습니다")
             else:
                 decide("applied", "기존 안내가 취소되었습니다")
-        # 6. 값이 없거나 그대로면 반영할 필요가 없다
+        # 6. 값이 없거나, 문장 형태라 값을 특정할 수 없거나, 그대로면 반영하지 않는다
         elif not c.value:
             decide("pending", "값을 확인하지 못했습니다")
+        elif looks_like_sentence(c.value):
+            decide("pending", "바뀐 값을 정확히 찾지 못해 확인이 필요합니다")
         elif norm(c.key, old) == c.value:
             decide("ignored", "기존 정보와 같은 값입니다")
         # 7. 신규인데 이미 다른 값이 있으면 변경인지 사용자에게 묻는다

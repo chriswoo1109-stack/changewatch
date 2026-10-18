@@ -68,3 +68,17 @@ def test_low_confidence_needs_confirmation():
     c = Candidate(key="room", value="5번", change_type="change", evidence="진료실이 5번입니다", confidence=0.4)
     [d] = verify([c], {"room": "3번"}, "진료실이 5번입니다", KEYS)
     assert d.status == "pending"
+
+
+@pytest.mark.parametrize("value", ["대기 번호를 잘못 안내드렸습니다", "진료실로 들어오세요", "가" * 31])
+def test_sentence_value_needs_confirmation(value):
+    c = Candidate(key="room", value=value, change_type="change", evidence="진료실", confidence=0.9)
+    [d] = verify([c], {"room": "3번"}, "진료실", KEYS)
+    assert d.status == "pending"
+
+
+def test_long_medication_value_is_ok():
+    value = "하루 2회 아침저녁 식후 30분에 1정씩"
+    c = Candidate(key="medication", value=value, change_type="new", evidence="약", confidence=0.9)
+    [d] = verify([c], {}, "약", KEYS)
+    assert d.status == "applied"
