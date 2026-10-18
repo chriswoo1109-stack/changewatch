@@ -53,6 +53,15 @@
   {"name": "말투 - 이동해 주시기 바랍니다", "tags": ["change", "directive"], "facts": {"room": "3번"}, "text": "7번 진료실로 이동해 주시기 바랍니다.", "expect": {"room": ["applied", "7번"]}},
   {"name": "말투 - 기존 값 있을 때 가주세요", "tags": ["change", "directive"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "5번 진료실로 가주세요.", "expect": {"room": ["applied", "5번"]}},
 
+  {"name": "준비물 - 신규", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "준비물은 신분증과 보험증입니다.", "expect": {"supplies": ["applied", ["신분증과 보험증", "신분증, 보험증", "신분증 및 보험증"]]}},
+  {"name": "준비물 - 가져오세요", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "진료 의뢰서를 가져오세요.", "expect": {"supplies": ["applied", ["진료 의뢰서", "진료의뢰서"]]}},
+  {"name": "준비물 - 챙겨 오세요 (복용 키워드와 겹침)", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {}, "text": "복용 중인 약 목록을 챙겨 오세요.", "expect": {"supplies": ["applied", "*"]}},
+  {"name": "준비물 - 변경", "tags": ["supplies", "change"], "mock_xfail": true, "facts": {"supplies": "신분증"}, "text": "준비물이 신분증에서 보험증으로 바뀌었습니다.", "expect": {"supplies": ["applied", "보험증"]}},
+  {"name": "준비물 - 필요 없어짐", "tags": ["supplies", "cancel"], "mock_xfail": true, "facts": {"supplies": "보험증"}, "text": "준비물로 안내드린 보험증은 가져오지 않으셔도 됩니다.", "expect": {"supplies": ["applied", null]}},
+  {"name": "준비물 - 단순 언급", "tags": ["supplies", "mention"], "facts": {"supplies": "신분증"}, "text": "신분증을 두고 가신 분은 접수처에서 찾아가세요.", "expect": {"supplies": [["ignored", null], "신분증"]}},
+  {"name": "준비물 - 불확실", "tags": ["supplies", "uncertain"], "facts": {}, "text": "준비물로 아마 보험증이 필요할 거예요.", "expect": {"supplies": ["pending", null]}},
+  {"name": "준비물 - 다음 진료 때 가져오세요", "tags": ["supplies", "new"], "mock_xfail": true, "facts": {"next_visit": "2주 뒤"}, "text": "다음 진료 때 검사 결과지를 가져오세요.", "expect": {"supplies": ["applied", ["검사 결과지", "검사결과지"]], "next_visit": [["ignored", null], "2주 뒤"], "exam_time": [["ignored", "pending", null], null]}},
+
   {"name": "여러 항목 - 한 문장", "tags": ["multi", "new"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번이고, 검사는 오후 3시입니다.", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "여러 항목 - 유지와 변경", "tags": ["multi", "change"], "mock_xfail": true, "facts": {"room": "3번", "exam_time": "오후 2시"}, "text": "진료실은 그대로 3번이고, 검사만 오후 4시로 변경되었습니다.", "expect": {"room": [["ignored", null], "3번"], "exam_time": ["applied", "오후 4시"]}},
   {"name": "여러 항목 - 변경과 정정", "tags": ["multi", "change", "correction"], "facts": {"room": "3번", "visit_time": "오전 10시"}, "text": "진료실이 5번으로 바뀌었습니다. 진료 시간은 10시가 아니라 10시 30분입니다.", "expect": {"room": ["applied", "5번"], "visit_time": ["applied", "오전 10시 30분"]}},
