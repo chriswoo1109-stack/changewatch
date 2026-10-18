@@ -16,12 +16,12 @@ from app.core.config import settings
 from app.domains import load_domain
 from app.schemas.analysis import Candidate, ExtractionResult
 from app.services.normalize import normalize_value
+from app.services.verifier import UNCERTAIN_WORDS
 
 logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
-UNCERTAIN_WORDS = ["아마", "것 같", "일걸", "일 겁니다", "일 거예요", "확실하지"]
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]
 CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]

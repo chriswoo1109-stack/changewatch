@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass
 
 from app.core.config import settings
+from app.domains import am_hours, load_domain, time_keys
 from app.schemas.analysis import Candidate
 from app.services.normalize import fill_meridiem, normalize_value
 
@@ -29,23 +30,42 @@ class Decision:
     old_value: str | None
 
 
+# 말하는 사람이 확신하지 않는 표현. AI가 놓쳐도 근거 문장에 있으면 확인을 요청한다.
+UNCERTAIN_WORDS = ["아마", "것 같", "쯤", "확실하지", "일걸", "일 겁니다", "일 거예요", "지도 몰라", "지도 모릅"]
+
+
+def has_uncertain_words(evidence: str) -> bool:
+    return any(w in evidence for w in UNCERTAIN_WORDS)
+
+
 def verify(
     candidates: list[Candidate],
     facts: dict[str, str],
     original_text: str,
     allowed_keys: set[str],
     threshold: float | None = None,
-    time_keys: set[str] = frozenset(),
-    am_hours: tuple[int, int] = (7, 11),
+    domain: str | None = None,
 ) -> list[Decision]:
     threshold = settings.confidence_threshold if threshold is None else threshold
     decisions: list[Decision] = []
     current = dict(facts)  # 같은 안내 안에서 앞 문장의 반영 결과를 뒤 문장이 볼 수 있게 복사
 
+    # 도메인 JSON의 항목 설정 (domain을 안 주면 정규화만 하고 형식 검사는 하지 않음)
+    items = {i["key"]: i for i in load_domain(domain)["items"]} if domain else {}
+    times = time_keys(domain) if domain else set()
+    hours = am_hours(domain) if domain else (7, 11)
+
     def norm(key: str, value: str | None) -> str | None:
         # "오후 세 시"·"3시"와 "오후 3시"를 같은 값으로 보도록 정규화 (시각 항목은 오전/오후 보정까지)
         value = normalize_value(value)
-        return fill_meridiem(value, am_hours) if key in time_keys else value
+        return fill_meridiem(value, hours) if key in times else value
+
+    def position(c: Candidate) -> int:
+        i = original_text.find(c.evidence.strip())
+        return i if i >= 0 else len(original_text)
+
+    # AI가 후보를 뒤죽박죽 줘도 원문에 나온 순서대로 판단한다 ("취소되었습니다. 대신 9시에…")
+    candidates = sorted(candidates, key=position)
 
     for c in candidates:
         c = c.model_copy(update={"value": norm(c.key, c.value)})
@@ -68,8 +88,8 @@ def verify(
         # 3. 단순 언급은 기존 정보를 바꾸지 않는다
         elif c.change_type == "mention":
             decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
-        # 4. 말하는 사람이 확신하지 않거나 AI 신뢰도가 낮으면 확인 요청
-        elif c.change_type == "uncertain" or c.confidence < threshold:
+        # 4. 말하는 사람이 확신하지 않거나(AI가 놓쳐도 표현으로 확인) AI 신뢰도가 낮으면 확인 요청
+        elif c.change_type == "uncertain" or c.confidence < threshold or has_uncertain_words(c.evidence):
             decide("pending", "확실하지 않은 안내라 확인이 필요합니다")
         # 5. 취소
         elif c.change_type == "cancel":
@@ -77,11 +97,13 @@ def verify(
                 decide("ignored", "취소할 기존 정보가 없습니다")
             else:
                 decide("applied", "기존 안내가 취소되었습니다")
-        # 6. 값이 없거나, 문장 형태라 값을 특정할 수 없거나, 그대로면 반영하지 않는다
+        # 6. 값이 없거나, 문장 형태거나, 항목 형식(value_pattern)에 안 맞거나, 그대로면 반영하지 않는다
         elif not c.value:
             decide("pending", "값을 확인하지 못했습니다")
         elif looks_like_sentence(c.value):
             decide("pending", "바뀐 값을 정확히 찾지 못해 확인이 필요합니다")
+        elif (pattern := items.get(c.key, {}).get("value_pattern")) and not re.search(pattern, c.value):
+            decide("pending", "값의 형식이 맞지 않아 확인이 필요합니다")
         elif norm(c.key, old) == c.value:
             decide("ignored", "기존 정보와 같은 값입니다")
         # 7. 신규인데 이미 다른 값이 있으면 변경인지 사용자에게 묻는다

@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DB
 
-from app.domains import am_hours, item_labels, time_keys
+from app.domains import item_labels
 from app.models import Announcement, ChangeLog, Fact, VisitSession
 from app.schemas.analysis import AnalyzeResponse, ChangeOut
 from app.schemas.session import FactOut, SessionOut
@@ -68,8 +68,7 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
         # 아직 commit 전이라 안내 원문도 저장되지 않습니다. 사용자는 같은 내용으로 다시 시도하면 됩니다.
         db.rollback()
         raise HTTPException(status_code=502, detail="AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요")
-    decisions = verify(extraction.candidates, facts, text, set(labels),
-                       time_keys=time_keys(session.domain), am_hours=am_hours(session.domain))
+    decisions = verify(extraction.candidates, facts, text, set(labels), domain=session.domain)
 
     logs: list[ChangeLog] = []
     for d in decisions:

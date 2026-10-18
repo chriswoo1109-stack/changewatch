@@ -26,7 +26,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from app.core.config import settings
-from app.domains import am_hours, item_labels, time_keys
+from app.domains import item_labels
 from app.services.llm_extractor import MockExtractor, OpenAIExtractor
 from app.services.verifier import verify
 
@@ -52,8 +52,7 @@ def value_ok(actual: str | None, expected) -> bool:
 def run_case(extractor, case: dict, keys: set[str]) -> dict:
     facts = case["facts"]
     candidates = extractor.extract(case["text"], DOMAIN, facts).candidates
-    decisions = verify(candidates, facts, case["text"], keys,
-                       time_keys=time_keys(DOMAIN), am_hours=am_hours(DOMAIN))
+    decisions = verify(candidates, facts, case["text"], keys, domain=DOMAIN)
 
     after = dict(facts)
     statuses: dict[str, str] = {}  # 같은 key가 여러 번 나오면 마지막 판단

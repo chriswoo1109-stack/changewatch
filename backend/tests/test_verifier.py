@@ -8,19 +8,18 @@ from pathlib import Path
 
 import pytest
 
-from app.domains import am_hours, item_labels, time_keys
+from app.domains import item_labels
 from app.schemas.analysis import Candidate
 from app.services.llm_extractor import MockExtractor
 from app.services.verifier import verify
 
 CASES = json.loads((Path(__file__).parent / "fixtures" / "sentences.json").read_text(encoding="utf-8"))
 KEYS = set(item_labels("hospital"))
-TIME = {"time_keys": time_keys("hospital"), "am_hours": am_hours("hospital")}
 
 
 def run(facts: dict, text: str) -> tuple[dict, dict]:
     candidates = MockExtractor().extract(text, "hospital", facts).candidates
-    decisions = verify(candidates, facts, text, KEYS, **TIME)
+    decisions = verify(candidates, facts, text, KEYS, domain="hospital")
     after = dict(facts)
     statuses = {}
     for d in decisions:
@@ -82,3 +81,26 @@ def test_long_medication_value_is_ok():
     c = Candidate(key="medication", value=value, change_type="new", evidence="약", confidence=0.9)
     [d] = verify([c], {}, "약", KEYS)
     assert d.status == "applied"
+
+
+def test_uncertain_words_override_ai():
+    # AI가 불확실 표현을 놓치고 정정이라고 해도 확인 요청
+    c = Candidate(key="visit_time", value="11시", change_type="correction", evidence="진료는 11시쯤 될 것 같아요.", confidence=0.9)
+    [d] = verify([c], {"visit_time": "오전 10시"}, "진료는 11시쯤 될 것 같아요.", KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+@pytest.mark.parametrize("key, value", [("room", "진료실"), ("exam_time", "정정 안내")])
+def test_value_pattern_mismatch_needs_confirmation(key, value):
+    c = Candidate(key=key, value=value, change_type="change", evidence="안내", confidence=0.9)
+    [d] = verify([c], {}, "안내", KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+def test_candidates_follow_text_order():
+    text = "오후 2시 검사는 취소되었습니다. 대신 내일 오전 9시에 검사가 있습니다."
+    new = Candidate(key="exam_time", value="오전 9시", change_type="change", evidence="대신 내일 오전 9시에 검사가 있습니다.", confidence=1.0)
+    cancel = Candidate(key="exam_time", value="오후 2시", change_type="cancel", evidence="오후 2시 검사는 취소되었습니다.", confidence=1.0)
+    decisions = verify([new, cancel], {"exam_time": "오후 2시"}, text, KEYS, domain="hospital")
+    assert [d.candidate.change_type for d in decisions] == ["cancel", "change"]
+    assert decisions[-1].status == "applied"
