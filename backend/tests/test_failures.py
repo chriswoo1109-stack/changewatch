@@ -51,6 +51,22 @@ def test_stt_failure_returns_korean_message(monkeypatch):
     assert "음성 인식에 실패" in r.json()["detail"]
 
 
+def test_stt_sends_domain_vocabulary(monkeypatch):
+    sent = {}
+
+    class RecordingOpenAI(BrokenOpenAI):
+        def create(self, **kwargs):
+            sent.update(kwargs)
+            return type("Result", (), {"text": "진료실이 5번으로 변경되었습니다."})()
+
+    monkeypatch.setattr(settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(openai, "OpenAI", RecordingOpenAI)
+    r = client.post(f"/api/sessions/{new_session()}/transcribe", files={"file": ("a.webm", b"x", "audio/webm")})
+    assert r.status_code == 200
+    assert "진료실" in sent["prompt"] and "원무과" in sent["prompt"]
+    assert "오세요" not in sent["prompt"]  # 문장 조각 키워드는 빼고 용어만
+
+
 def test_stt_empty_file(monkeypatch):
     monkeypatch.setattr(settings, "openai_api_key", "test-key")
     r = client.post(f"/api/sessions/{new_session()}/transcribe", files={"file": ("a.webm", b"", "audio/webm")})
