@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import BottomNav from "./components/common/BottomNav";
 import HomePage from "./pages/HomePage";
 import RecordingPage from "./pages/RecordingPage";
@@ -23,6 +23,8 @@ export default function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/show" element={<ShowPage />} />
+          {/* 없는 주소는 홈으로 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <BottomNav />
