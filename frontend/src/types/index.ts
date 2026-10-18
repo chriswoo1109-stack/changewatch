@@ -10,12 +10,29 @@ export interface Fact {
   updated_at: string;
 }
 
+export interface Todo {
+  id: number;
+  text: string;
+  evidence: string;
+  done: boolean;
+  created_at: string;
+}
+
 export interface Session {
   id: string;
   title: string;
   domain: string;
+  my_number: string | null;
+  my_name: string | null;
   created_at: string;
   facts: Fact[];
+  todos: Todo[];
+}
+
+/** 안내에서 내 번호·이름이 불렸을 때만 옵니다. */
+export interface MyTurn {
+  matched: string;
+  evidence: string;
 }
 
 export interface Change {
@@ -37,6 +54,8 @@ export interface AnalyzeResponse {
   text: string;
   changes: Change[];
   needs_confirmation: boolean;
+  todos: Todo[]; // 이번 안내에서 새로 생긴 할 일
+  my_turn: MyTurn | null;
 }
 
 export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
