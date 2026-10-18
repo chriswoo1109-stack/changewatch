@@ -25,6 +25,8 @@ PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]
 CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]
+# 안내·지시로 끝나는 말투. "5번 진료실로 가주세요"는 언급이 아니라 안내다. ("가 주세요", "이동하세요", "바랍니다" 포함)
+DIRECTIVE_RE = re.compile(r"(세요|주십시오|십시오|바랍니다|입니다|됩니다)$")
 VALUE_RE = re.compile(r"(오전|오후)?\s*\d+\s*(번|층|시\s*\d+\s*분|시|분|일|주|회|개월)(\s*(뒤|후))?")
 
 
@@ -49,7 +51,13 @@ class MockExtractor:
             # 값 찾기용으로만 한글 숫자를 바꾼다 (evidence는 원문 그대로)
             target = normalize_value(target)
             match = VALUE_RE.search(target)
-            value = re.sub(r"\s+", " ", match.group(0)).strip() if match else sentence.rstrip(".!? ")
+            if match:
+                value = re.sub(r"\s+", " ", match.group(0)).strip()
+            elif item.get("value_pattern"):
+                # 숫자 값이 필요한 항목(진료실·순번·시각)인데 못 찾으면 빈 값 → verifier가 확인 요청
+                value = None
+            else:
+                value = sentence.rstrip(".!? ")
 
             if any(w in sentence for w in UNCERTAIN_WORDS):
                 change_type, confidence = "uncertain", 0.5
@@ -59,7 +67,7 @@ class MockExtractor:
                 change_type, confidence = "cancel", 0.9
             elif any(w in sentence for w in CHANGE_WORDS):
                 change_type, confidence = "change", 0.9
-            elif match and match.start() < sentence.find(keyword) and not re.search(r"(가세요|오세요|입니다)$", sentence.rstrip(".!? ")):
+            elif match and match.start() < sentence.find(keyword) and not DIRECTIVE_RE.search(sentence.rstrip(".!? ")):
                 # "5번 진료실은 혼잡합니다"처럼 값이 수식어로만 쓰인 경우
                 change_type, confidence = "mention", 0.8
             else:

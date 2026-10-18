@@ -45,6 +45,14 @@
   {"name": "오전/오후 보정 - 생략해도 같은 값", "tags": ["same", "meridiem"], "facts": {"exam_time": "오후 3시"}, "text": "검사는 3시입니다.", "expect": {"exam_time": [["ignored", null], "오후 3시"]}},
   {"name": "오전/오후 보정 - 24시간 표기", "tags": ["change", "meridiem"], "facts": {"exam_time": "오후 2시"}, "text": "검사 시간이 15시로 변경되었습니다.", "expect": {"exam_time": ["applied", "오후 3시"]}},
 
+  {"name": "값 없음 - 숫자 없는 진료실 안내", "tags": ["no_value"], "facts": {"room": "3번"}, "text": "보건 진료실도 이동하세요.", "expect": {"room": ["pending", "3번"]}},
+  {"name": "값 없음 - 시간 없는 검사 안내", "tags": ["no_value"], "facts": {"exam_time": "오후 2시"}, "text": "검사는 영상의학과에서 진행합니다.", "expect": {"exam_time": [["pending", "ignored", null], "오후 2시"]}},
+  {"name": "값 없음 - 번호 없는 순번 안내", "tags": ["no_value"], "facts": {"wait_number": "12번"}, "text": "대기 순번은 접수처에서 확인하세요.", "expect": {"wait_number": [["pending", "ignored", null], "12번"]}},
+  {"name": "말투 - 가주세요 (붙여 씀)", "tags": ["new", "directive"], "facts": {}, "text": "5번 진료실로 가주세요.", "expect": {"room": ["applied", "5번"]}},
+  {"name": "말투 - 가 주세요 (띄어 씀)", "tags": ["new", "directive"], "facts": {}, "text": "5번 진료실로 가 주세요.", "expect": {"room": ["applied", "5번"]}},
+  {"name": "말투 - 이동해 주시기 바랍니다", "tags": ["change", "directive"], "facts": {"room": "3번"}, "text": "7번 진료실로 이동해 주시기 바랍니다.", "expect": {"room": ["applied", "7번"]}},
+  {"name": "말투 - 기존 값 있을 때 가주세요", "tags": ["change", "directive"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "5번 진료실로 가주세요.", "expect": {"room": ["applied", "5번"]}},
+
   {"name": "여러 항목 - 한 문장", "tags": ["multi", "new"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번이고, 검사는 오후 3시입니다.", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "여러 항목 - 유지와 변경", "tags": ["multi", "change"], "mock_xfail": true, "facts": {"room": "3번", "exam_time": "오후 2시"}, "text": "진료실은 그대로 3번이고, 검사만 오후 4시로 변경되었습니다.", "expect": {"room": [["ignored", null], "3번"], "exam_time": ["applied", "오후 4시"]}},
   {"name": "여러 항목 - 변경과 정정", "tags": ["multi", "change", "correction"], "facts": {"room": "3번", "visit_time": "오전 10시"}, "text": "진료실이 5번으로 바뀌었습니다. 진료 시간은 10시가 아니라 10시 30분입니다.", "expect": {"room": ["applied", "5번"], "visit_time": ["applied", "오전 10시 30분"]}},
