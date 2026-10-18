@@ -84,6 +84,8 @@ changewatch/
 1. evidence(근거 문장)가 원문에 없으면 → pending
 2. 도메인 템플릿에 없는 key → pending
 3. mention → ignored (기존 값 유지)
+3-1. 다른 사람을 부르는 안내("12번 환자분…", "김철수님…", 근거가 든 원문 문장 전체로 확인)
+     → 내 번호·이름을 등록했으면 ignored, 등록 안 했으면 pending
 4. uncertain, confidence < 0.7, 또는 근거에 불확실 표현("아마", "것 같", "쯤" 등)이 있으면 → pending
 5. cancel: 기존 값 있으면 applied(Fact 삭제), 없으면 ignored
 6. 값 없음 / 문장 형태(30자 초과, "~니다·~세요" 등) / 항목의 `value_pattern` 불일치 → pending, 기존과 같은 값 → ignored

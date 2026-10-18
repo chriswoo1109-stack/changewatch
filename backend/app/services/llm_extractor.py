@@ -40,7 +40,10 @@ def split_sentences(text: str) -> list[str]:
 class MockExtractor:
     """규칙 기반 모의 분석기. 실제 AI의 '대역'이며 정확도는 낮습니다."""
 
-    def extract(self, text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
+    def extract(
+        self, text: str, domain: str, facts: dict[str, str], my_number: str | None = None, my_name: str | None = None
+    ) -> ExtractionResult:
+        # 내 번호·이름은 쓰지 않습니다. 다른 사람 호출은 verifier가 걸러냅니다.
         items = load_domain(domain)["items"]
         candidates: list[Candidate] = []
         todos: list[TodoCandidate] = []
@@ -93,12 +96,15 @@ class OpenAIExtractor:
         # 응답이 늦으면 오래 기다리지 않고 모의 분석기로 넘어가도록 짧게 잡습니다.
         self.client = OpenAI(api_key=settings.openai_api_key, timeout=20, max_retries=1)
 
-    def extract(self, text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
+    def extract(
+        self, text: str, domain: str, facts: dict[str, str], my_number: str | None = None, my_name: str | None = None
+    ) -> ExtractionResult:
         spec = load_domain(domain)
         prompt = PROMPT_PATH.read_text(encoding="utf-8").format(
             domain_label=spec["label"],
             items="\n".join(f"- {i['key']}: {i['label']}" for i in spec["items"]),
             facts=json.dumps(facts, ensure_ascii=False) if facts else "(없음)",
+            me=f"번호: {my_number or '모름'}, 이름: {my_name or '모름'}",
             text=text,
         )
         try:
@@ -167,7 +173,9 @@ def get_extractor():
     return OpenAIExtractor() if settings.use_openai else MockExtractor()
 
 
-def extract_safely(text: str, domain: str, facts: dict[str, str]) -> ExtractionResult:
+def extract_safely(
+    text: str, domain: str, facts: dict[str, str], my_number: str | None = None, my_name: str | None = None
+) -> ExtractionResult:
     """AI 분석이 실패하면(ExtractionError: 호출 오류·JSON 아님 등) 모의 분석기로 대신 처리합니다.
 
     형식이 조금 틀린 응답은 parse_candidates가 먼저 고쳐 쓰므로, 여기까지 오는 건 복구할 수 없는 경우뿐입니다.
@@ -175,7 +183,7 @@ def extract_safely(text: str, domain: str, facts: dict[str, str]) -> ExtractionR
     """
     extractor = get_extractor()
     try:
-        return extractor.extract(text, domain, facts)
+        return extractor.extract(text, domain, facts, my_number, my_name)
     except Exception:
         if isinstance(extractor, MockExtractor):
             raise

@@ -88,8 +88,11 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
     db.flush()
 
     # AI가 실패해도(호출 오류·응답 형식 오류) 모의 분석기로 대체하므로 시연이 멈추지 않습니다.
-    extraction = extract_safely(text, session.domain, facts)
-    decisions = verify(extraction.candidates, facts, text, set(labels), domain=session.domain)
+    extraction = extract_safely(text, session.domain, facts, session.my_number, session.my_name)
+    decisions = verify(
+        extraction.candidates, facts, text, set(labels), domain=session.domain,
+        my_number=session.my_number, my_name=session.my_name,
+    )
 
     logs: list[ChangeLog] = []
     for d in decisions:
