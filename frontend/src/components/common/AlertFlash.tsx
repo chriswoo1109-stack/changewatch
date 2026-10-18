@@ -1,19 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   message: string;
   onClose: () => void;
 }
 
-/** 화면 전체를 깜빡이고 상단에 큰 알림을 띄웁니다. (진동 지원 기기는 진동도) */
+const AUTO_CLOSE_MS = 4000;
+
+/** 화면 전체를 깜빡이고 상단에 큰 알림을 띄웁니다. (진동 지원 기기는 진동도)
+ *  4초 뒤 자동으로 닫히고, 화면 아무 데나 눌러도 닫힙니다. */
 export default function AlertFlash({ message, onClose }: Props) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     navigator.vibrate?.([300, 150, 300]);
+    const timer = window.setTimeout(() => onCloseRef.current(), AUTO_CLOSE_MS);
+    return () => window.clearTimeout(timer);
   }, [message]);
 
   return (
     <>
-      <div key={message} className="cw-flash pointer-events-none fixed inset-0 z-40 bg-amber-300" aria-hidden />
+      {/* 깜빡이는 막: 누르면 알림 닫기 (아래 화면 조작은 닫은 뒤에) */}
+      <div key={message} className="cw-flash fixed inset-0 z-40 bg-amber-300" aria-hidden onClick={onClose} />
       <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2" role="alert">
         <button
           onClick={onClose}

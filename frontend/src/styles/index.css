@@ -14,6 +14,7 @@ body {
   50% { opacity: 0.85; }
 }
 .cw-flash {
+  opacity: 0; /* 기본은 투명. 이게 없으면 깜빡임이 끝난 뒤 노란 막이 화면을 덮은 채 남습니다 */
   animation: cw-flash 1s ease-in-out 3;
 }
 @media (prefers-reduced-motion: reduce) {
