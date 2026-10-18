@@ -8,18 +8,19 @@ from pathlib import Path
 
 import pytest
 
-from app.domains import item_labels
+from app.domains import am_hours, item_labels, time_keys
 from app.schemas.analysis import Candidate
 from app.services.llm_extractor import MockExtractor
 from app.services.verifier import verify
 
 CASES = json.loads((Path(__file__).parent / "fixtures" / "sentences.json").read_text(encoding="utf-8"))
 KEYS = set(item_labels("hospital"))
+TIME = {"time_keys": time_keys("hospital"), "am_hours": am_hours("hospital")}
 
 
 def run(facts: dict, text: str) -> tuple[dict, dict]:
     candidates = MockExtractor().extract(text, "hospital", facts).candidates
-    decisions = verify(candidates, facts, text, KEYS)
+    decisions = verify(candidates, facts, text, KEYS, **TIME)
     after = dict(facts)
     statuses = {}
     for d in decisions:
@@ -32,12 +33,29 @@ def run(facts: dict, text: str) -> tuple[dict, dict]:
     return statuses, after
 
 
-@pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
+def as_list(x) -> list:
+    return x if isinstance(x, list) else [x]
+
+
+# mock_xfail: 모의 분석기로는 못 맞히는 문장. 실제 AI 정확도는 scripts/evaluate.py로 측정합니다.
+PARAMS = [
+    pytest.param(c, id=c["name"],
+                 marks=pytest.mark.xfail(reason="모의 분석기 한계") if c.get("mock_xfail") else ())
+    for c in CASES
+]
+
+
+@pytest.mark.parametrize("case", PARAMS)
 def test_sentence_cases(case):
     statuses, after = run(case["facts"], case["text"])
     for key, (status, value) in case["expect"].items():
-        assert statuses.get(key) == status
-        assert after.get(key) == value
+        assert statuses.get(key) in as_list(status)
+        if value == "*":
+            assert after.get(key)
+        else:
+            assert after.get(key) in as_list(value)
+    # 기대하지 않은 항목이 반영되면 안 된다
+    assert not [k for k, s in statuses.items() if s == "applied" and k not in case["expect"]]
 
 
 def test_rejects_evidence_not_in_text():

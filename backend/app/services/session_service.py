@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DB
 
-from app.domains import item_labels
+from app.domains import am_hours, item_labels, time_keys
 from app.models import Announcement, ChangeLog, Fact, VisitSession
 from app.schemas.analysis import AnalyzeResponse, ChangeOut
 from app.schemas.session import FactOut, SessionOut
@@ -63,7 +63,8 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
     db.flush()
 
     extraction = get_extractor().extract(text, session.domain, facts)
-    decisions = verify(extraction.candidates, facts, text, set(labels))
+    decisions = verify(extraction.candidates, facts, text, set(labels),
+                       time_keys=time_keys(session.domain), am_hours=am_hours(session.domain))
 
     logs: list[ChangeLog] = []
     for d in decisions:

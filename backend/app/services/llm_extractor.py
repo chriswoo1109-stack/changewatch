@@ -12,6 +12,7 @@ from pathlib import Path
 from app.core.config import settings
 from app.domains import load_domain
 from app.schemas.analysis import Candidate, ExtractionResult
+from app.services.normalize import normalize_value
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
@@ -40,6 +41,8 @@ class MockExtractor:
             keyword = next(k for k in item["keywords"] if k in sentence)
 
             target = sentence.split("아니라", 1)[1] if "아니라" in sentence else sentence
+            # 값 찾기용으로만 한글 숫자를 바꾼다 (evidence는 원문 그대로)
+            target = normalize_value(target)
             match = VALUE_RE.search(target)
             value = re.sub(r"\s+", " ", match.group(0)).strip() if match else sentence.rstrip(".!? ")
 

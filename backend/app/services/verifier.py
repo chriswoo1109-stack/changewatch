@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from app.core.config import settings
 from app.schemas.analysis import Candidate
+from app.services.normalize import fill_meridiem, normalize_value
 
 
 @dataclass
@@ -24,12 +25,20 @@ def verify(
     original_text: str,
     allowed_keys: set[str],
     threshold: float | None = None,
+    time_keys: set[str] = frozenset(),
+    am_hours: tuple[int, int] = (7, 11),
 ) -> list[Decision]:
     threshold = settings.confidence_threshold if threshold is None else threshold
     decisions: list[Decision] = []
     current = dict(facts)  # 같은 안내 안에서 앞 문장의 반영 결과를 뒤 문장이 볼 수 있게 복사
 
+    def norm(key: str, value: str | None) -> str | None:
+        # "오후 세 시"·"3시"와 "오후 3시"를 같은 값으로 보도록 정규화 (시각 항목은 오전/오후 보정까지)
+        value = normalize_value(value)
+        return fill_meridiem(value, am_hours) if key in time_keys else value
+
     for c in candidates:
+        c = c.model_copy(update={"value": norm(c.key, c.value)})
         old = current.get(c.key)
 
         def decide(status: str, reason: str) -> None:
@@ -61,7 +70,7 @@ def verify(
         # 6. 값이 없거나 그대로면 반영할 필요가 없다
         elif not c.value:
             decide("pending", "값을 확인하지 못했습니다")
-        elif old == c.value:
+        elif norm(c.key, old) == c.value:
             decide("ignored", "기존 정보와 같은 값입니다")
         # 7. 신규인데 이미 다른 값이 있으면 변경인지 사용자에게 묻는다
         elif c.change_type == "new" and old is not None:
