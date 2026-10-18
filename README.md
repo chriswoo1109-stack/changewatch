@@ -53,6 +53,7 @@ npm run dev
 | `backend/tests/fixtures/sentences.json` | 테스트 문장 세트 (정확도 측정용) |
 | `frontend/src/pages/` | 화면 (시안 번호 주석 참고) |
 | `docs/api.md` | 프론트·백엔드 약속 |
+| `docs/deploy.md` | 배포 방법 (Neon + Render + Vercel) |
 
 ## 브랜치 규칙
 - `main`: 검증된 시연 버전 / `develop`: 통합 / `feature/fe-*`, `feature/be-*`: 기능 개발
