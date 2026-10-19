@@ -1,7 +1,8 @@
 // 안내문 필터: 소음·잡담 대신 "안내처럼 보이는 문장"만 분석에 보냅니다.
 // - 숫자(번호·시간)가 있거나 취소 안내면 안내(notice)
+// - 준비물·복용 방법처럼 값이 글인 항목은 숫자가 없어도 안내(notice): "신분증 챙겨 오세요"
 // - "처방전은 약국에 제출하세요"처럼 할 일 안내도 안내(notice) → 서버가 할 일(todos)로 뽑습니다
-//   단, "보건 진료실도 이동하세요"처럼 추적 항목(진료실 등)인데 값(숫자)이 없는 문장은
+//   단, "보건 진료실도 이동하세요"처럼 값이 숫자인 항목(진료실 등)인데 숫자가 없는 문장은
 //   분석해도 엉뚱한 값이 저장될 뿐이라 뺍니다.
 // - 내 정보 키워드(대기번호·이름)가 있으면 내 안내(mine) → 알림 대상
 // - 나머지는 소음(noise) → 분석하지 않음
@@ -20,7 +21,11 @@ const NO_VALUE_WORDS = ["취소"];
 const TODO_ENDING = /(하세요|해 주세요|해주세요|하십시오)[.!?]?$/;
 
 // 추적 항목 키워드 (backend/app/domains/hospital.json의 keywords와 맞춥니다)
-const TRACK_WORDS = ["진료실", "순번", "대기번호", "대기 번호", "검사", "진료 시간", "예약", "복용", "약은", "준비물", "지참"];
+// - 값이 숫자인 항목: 진료실·대기 순번·검사 시간·진료 시간·다음 예약
+const NUMBER_ITEM_WORDS = ["진료실", "순번", "대기번호", "대기 번호", "검사", "진료 시간", "진료시간", "예약"];
+// - 값이 글인 항목: 준비물(supplies)·복용 방법(medication)
+const TEXT_ITEM_WORDS = ["준비물", "챙겨", "가져오세요", "지참", "복용", "드세요", "약은"];
+const TRACK_WORDS = [...NUMBER_ITEM_WORDS, ...TEXT_ITEM_WORDS];
 
 // 음성 인식이 자주 틀리는 안내 단어 보정. 실제 시연 중 나온 오인식을 모아 둔 목록입니다.
 // ("진료실"은 발음이 [질료실]이라 "증류시리", "직묘실", "진료신도" 등으로 자주 들립니다)
@@ -83,7 +88,8 @@ export function hasMyKeyword(sentence: string, my: MyKeywords) {
 export function classifySentence(sentence: string, my: MyKeywords): SentenceKind {
   if (hasMyKeyword(sentence, my)) return "mine";
   if (/\d/.test(sentence) || NO_VALUE_WORDS.some((w) => sentence.includes(w))) return "notice";
-  if (TODO_ENDING.test(sentence.trim()) && !TRACK_WORDS.some((w) => sentence.includes(w))) return "notice";
+  if (TEXT_ITEM_WORDS.some((w) => sentence.includes(w))) return "notice";
+  if (TODO_ENDING.test(sentence.trim()) && !NUMBER_ITEM_WORDS.some((w) => sentence.includes(w))) return "notice";
   return "noise";
 }
 

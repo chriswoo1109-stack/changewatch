@@ -26,6 +26,11 @@ export function canceledChanges(recent: Map<string, Change>, facts: Fact[]) {
   return [...recent.values()].filter((c) => c.change_type === "cancel" && !facts.some((f) => f.key === c.key));
 }
 
+/** 값 길이에 맞춘 글씨 크기. 준비물처럼 값이 긴 글이면 작게 해서 카드 밖으로 넘치지 않게 합니다. */
+export function valueSize(value: string | null | undefined, big: string, small: string) {
+  return (value ?? "").length > 8 ? small : big;
+}
+
 /** 직원에게 보여줄 확인 질문: "진료실이 5번 맞나요?" */
 export function staffQuestion(label: string, value: string) {
   return `${iGa(label)} ${value} 맞나요?`;
