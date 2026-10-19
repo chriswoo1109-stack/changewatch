@@ -63,6 +63,23 @@ class Decision:
 UNCERTAIN_WORDS = ["아마", "것 같", "쯤", "확실하지", "일걸", "일 겁니다", "일 거예요", "지도 몰라", "지도 모릅"]
 
 
+# 바뀜을 알리는 표현과, 안내·지시로 끝나는 말투 (모의 분석기도 같은 목록을 씁니다)
+CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동", "정정", "아니라", "취소", "배정", "연기", "미뤄", "당겨"]
+DIRECTIVE_RE = re.compile(r"(세요|주십시오|십시오|바랍니다|입니다|됩니다)$")
+
+
+def value_only_describes(value: str | None, sentence: str, names: list[str]) -> bool:
+    """값이 항목 이름을 꾸미기만 하는 문장인지 ("5번 진료실은 지금 혼잡합니다").
+
+    "5번 진료실은/이/도 ~"처럼 값+항목이 주어로 쓰이고, 바뀜을 알리는 말도 없고,
+    "~세요·~입니다" 같은 안내 말투도 아니면 그 진료실의 상태를 말한 것이지 내 진료실이 바뀐 게 아니다.
+    """
+    if not value or any(w in sentence for w in CHANGE_WORDS) or DIRECTIVE_RE.search(sentence.rstrip(".!? ")):
+        return False
+    return any(re.search(re.escape(value) + r"\s*" + re.escape(n) + r"\s*(?:은|는|이|가|도)(?![가-힣])", sentence)
+               for n in names)
+
+
 def has_uncertain_words(evidence: str) -> bool:
     return any(w in evidence for w in UNCERTAIN_WORDS)
 
@@ -97,6 +114,10 @@ def verify(
         groups = {i["label"]: current.get(k) for k, i in items.items() if i.get("group_call")}
         return find_audience_detail(sentence, my_number, my_name, my_times, hours, groups)
 
+    def item_names(key: str) -> list[str]:
+        item = items.get(key, {})
+        return [n for n in [item.get("label"), *item.get("keywords", [])] if n]
+
     def position(c: Candidate) -> int:
         i = original_text.find(c.evidence.strip())
         return i if i >= 0 else len(original_text)
@@ -129,10 +150,13 @@ def verify(
             decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
         # 3-1. 다른 사람을 부르는 안내("12번 환자분 7번 진료실로 오세요")는 반영하지 않고, 누구인지 모르면 확인 요청
         #      AI가 근거를 "7번 진료실로 오세요"처럼 잘라 줄 수 있어 원문 문장 전체로 판단한다 (services/audience.py)
-        elif (found := audience(sentence)) and found[0] == "other":
+        elif (found := audience(normalize_value(sentence))) and found[0] == "other":
             decide("ignored", f"다른 분({found[1]})을 부르는 안내라 내 정보는 그대로 둡니다")
         elif found and found[0] == "unknown":
             decide("pending", unknown_reason(found[1]))
+        # 3-2. 값이 항목 이름을 꾸미기만 하는 문장은 단순 언급 ("5번 진료실은 지금 혼잡합니다")
+        elif value_only_describes(c.value, normalize_value(sentence), item_names(c.key)):
+            decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
         # 4. 말하는 사람이 확신하지 않거나(AI가 놓쳐도 표현으로 확인) AI 신뢰도가 낮으면 확인 요청
         elif c.change_type == "uncertain" or c.confidence < threshold or has_uncertain_words(sentence):
             decide("pending", "확실하지 않은 안내라 확인이 필요합니다")

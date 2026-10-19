@@ -1,0 +1,24 @@
+[
+  {
+    "name": "README 시연 순서",
+    "session": {"title": "오늘 병원 방문", "domain": "hospital"},
+    "steps": [
+      {"text": "진료실은 3번입니다.", "changes": {"room": "applied"}, "facts": {"room": "3번"}, "needs_confirmation": false},
+      {"text": "5번 진료실은 지금 혼잡합니다.", "changes": {"room": ["ignored", null]}, "facts": {"room": "3번"}, "needs_confirmation": false},
+      {"text": "진료실이 5번으로 변경되었습니다.", "changes": {"room": "applied"}, "facts": {"room": "5번"}, "needs_confirmation": false},
+      {"text": "아마 진료실이 7번일 거예요.", "changes": {"room": "pending"}, "facts": {"room": "5번"}, "needs_confirmation": true},
+      {"text": "처방전은 약국에 제출하세요.", "changes": {}, "facts": {"room": "5번"}, "todos": 1}
+    ]
+  },
+  {
+    "name": "대기실 방송 (내 번호 37)",
+    "session": {"title": "대기실", "domain": "hospital", "my_number": "37"},
+    "steps": [
+      {"text": "37번 환자분 3번 진료실로 오세요.", "changes": {"room": "applied"}, "facts": {"room": "3번"}, "my_turn": true},
+      {"text": "12번 환자분 5번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "3번"}, "my_turn": false},
+      {"text": "삼십칠 번 환자분, 진료실이 7번으로 변경되었습니다.", "changes": {"room": "applied"}, "facts": {"room": "7번"}, "my_turn": true},
+      {"text": "십이 번 환자분 5번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false},
+      {"text": "137번 환자분 2번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false}
+    ]
+  }
+]

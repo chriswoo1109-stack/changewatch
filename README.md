@@ -43,6 +43,12 @@ npm run dev
 3. `진료실이 5번으로 변경되었습니다.` → 3번 → 5번 변경
 4. `아마 진료실이 7번일 거예요.` → 확인 요청
 
+시연 전에 실제 AI로 위 순서가 매번 맞는지 점검합니다 (backend 폴더, `.env`에 OpenAI 키 필요):
+```bash
+python -m scripts.demo_check --provider openai --repeat 5
+```
+시연 문장을 바꾸면 `backend/tests/fixtures/demo.json`도 함께 고쳐 주세요.
+
 ## 핵심 파일
 | 파일 | 역할 |
 |---|---|
