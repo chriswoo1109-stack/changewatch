@@ -190,3 +190,10 @@ def test_korean_number_call_of_someone_else_is_ignored():
     [d] = verify([c], {"room": "7번"}, text, KEYS, domain="hospital", my_number="37")
     assert d.status == "ignored"
     assert "12번" in d.reason
+
+
+def test_bare_number_gets_unit():
+    text = "대기 번호 12번으로 접수되었습니다."
+    c = Candidate(key="wait_number", value="12", change_type="new", evidence=text, confidence=1.0)
+    [d] = verify([c], {}, text, KEYS, domain="hospital")
+    assert (d.status, d.candidate.value) == ("applied", "12번")

@@ -101,6 +101,7 @@ uvicorn app.main:app --reload      # http://localhost:8000/docs
 pytest -v
 python -m scripts.evaluate [--provider openai]   # 변경 판단 정확도 평가
 python -m scripts.demo_check --provider openai --repeat 5   # 시연 시나리오(tests/fixtures/demo.json) 반복 점검
+python -m scripts.report --provider openai --repeat 3   # 발표용 비교표 (AI 단독 vs 규칙 검증), 결과는 docs/evaluation.md에 정리
 
 # 프론트 (frontend 폴더에서)
 npm run dev                        # http://localhost:5173
@@ -110,7 +111,7 @@ npm run build                      # 타입 검사 + 빌드
 ## 코딩 규칙
 - **API 형식을 바꾸면** `docs/api.md`, `backend/app/schemas/`, `frontend/src/types/index.ts` 세 곳을 함께 수정한다.
 - 새 분야는 코드가 아니라 `backend/app/domains/<분야>.json` 추가로 확장한다.
-  항목 필드: `key`, `label`, `keywords`(모의 분석기용), `description`(AI 프롬프트에 표시), `type: "time"`, `value_pattern`, `not_followed_by`, `group_call`("3번 진료실 환자분들"처럼 묶음 호출에 쓰이는 항목)
+  항목 필드: `key`, `label`, `keywords`(모의 분석기용), `description`(AI 프롬프트에 표시), `type: "time"`, `value_pattern`, `unit`(숫자만 온 값에 붙일 단위, "12" → "12번"), `not_followed_by`, `group_call`("3번 진료실 환자분들"처럼 묶음 호출에 쓰이는 항목)
 - 프롬프트·항목 설명을 바꾸면 `python -m scripts.evaluate --provider openai`를 2회 이상 돌려 **잘못된 반영 수**가 늘지 않았는지 확인한다. (작은 문구 변경으로 다른 유형이 깨지는 일이 잦다)
 - 변경 판단 로직을 바꾸면 `tests/fixtures/sentences.json`에 사례를 추가하고 `pytest`가 통과하는지 확인한다.
 - AI가 만든 결과는 반드시 `verifier`를 거친 뒤 저장한다. 라우트나 extractor에서 Fact를 직접 바꾸지 않는다.
