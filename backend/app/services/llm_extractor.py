@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.domains import load_domain
 from app.schemas.analysis import Candidate, ExtractionResult, TodoCandidate
 from app.services.normalize import normalize_value
-from app.services.verifier import UNCERTAIN_WORDS
+from app.services.verifier import CHANGE_WORDS, DIRECTIVE_RE, UNCERTAIN_WORDS
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,6 @@ PROMPT_PATH =Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]
-CHANGE_WORDS = ["변경", "바뀌", "바꿔", "옮겨", "이동"]
-# 안내·지시로 끝나는 말투. "5번 진료실로 가주세요"는 언급이 아니라 안내다. ("가 주세요", "이동하세요", "바랍니다" 포함)
-DIRECTIVE_RE = re.compile(r"(세요|주십시오|십시오|바랍니다|입니다|됩니다)$")
 TODO_RE = re.compile(r"(하세요|해 주세요|해주세요|하십시오)[.!?]?$")
 CALL_SUFFIX_RE = re.compile(r"\s*(?:환자|고객|손님|님|예약|진료 예약|검사 예정)")
 VALUE_RE = re.compile(r"(오전|오후)?\s*\d+\s*(번|층|시\s*\d+\s*분|시|분|일|주|회|개월)(\s*(뒤|후))?")

@@ -168,3 +168,25 @@ def test_room_group_call(my_room, expected):
     facts = {"room": my_room} if my_room else {}
     [d] = verify([c], facts, text, KEYS, domain="hospital")
     assert d.status == expected
+
+
+@pytest.mark.parametrize("value, text, expected", [
+    ("5번", "5번 진료실은 지금 혼잡합니다.", "ignored"),          # 상태 설명 → 단순 언급
+    ("7번", "7번 진료실이 지금 비어 있습니다.", "ignored"),
+    ("5번", "5번 진료실로 변경되었습니다.", "applied"),            # 바뀜을 알림
+    ("5번", "5번 진료실은 지금 비어 있으니 그쪽으로 가세요.", "applied"),  # 안내 말투
+    ("5번", "오 번 진료실은 지금 혼잡합니다.", "ignored"),         # 한글 숫자도 같은 판단
+])
+def test_value_only_describes_item(value, text, expected):
+    # AI가 change라고 해도, 값이 항목 이름을 꾸미기만 하면 verifier가 막는다
+    c = Candidate(key="room", value=value, change_type="change", evidence=text, confidence=0.9)
+    [d] = verify([c], {"room": "3번"}, text, KEYS, domain="hospital")
+    assert d.status == expected
+
+
+def test_korean_number_call_of_someone_else_is_ignored():
+    text = "십이 번 환자분 5번 진료실로 오세요."
+    c = Candidate(key="room", value="5번", change_type="change", evidence=text, confidence=1.0)
+    [d] = verify([c], {"room": "7번"}, text, KEYS, domain="hospital", my_number="37")
+    assert d.status == "ignored"
+    assert "12번" in d.reason

@@ -84,7 +84,8 @@ changewatch/
 1. evidence(근거 문장)가 원문에 없으면 → pending
 2. 도메인 템플릿에 없는 key → pending
 3. mention → ignored (기존 값 유지)
-3-1. 안내 대상(`services/audience.py`, 근거가 든 원문 문장 전체로 판단): 다른 사람("12번 환자분", "김철수님", 내 시각과 다른 "오전 11시 예약 환자분들", 내 진료실과 다른 "3번 진료실 환자분들") → ignored / 누구인지 모름(내 번호·이름·시각 미설정, "처음 오신 분은") → pending (사유에 "내 번호를 등록하면 자동으로 구분해요" 안내)
+3-1. 안내 대상(`services/audience.py`, 근거가 든 원문 문장 전체를 한글 숫자 정규화 후 판단): 다른 사람("12번 환자분", "김철수님", 내 시각과 다른 "오전 11시 예약 환자분들", 내 진료실과 다른 "3번 진료실 환자분들") → ignored / 누구인지 모름(내 번호·이름·시각 미설정, "처음 오신 분은") → pending (사유에 "내 번호를 등록하면 자동으로 구분해요" 안내)
+3-2. 값이 항목 이름을 꾸미기만 하는 문장("5번 진료실은 지금 혼잡합니다": 바뀜 표현·안내 말투 없음) → ignored
 4. uncertain, confidence < 0.7, 또는 근거에 불확실 표현("아마", "것 같", "쯤" 등)이 있으면 → pending
 5. cancel: 기존 값 있으면 applied(Fact 삭제), 없으면 ignored
 6. 값 없음 / 문장 형태(30자 초과, "~니다·~세요" 등) / 항목의 `value_pattern` 불일치 / 값 뒤에 `not_followed_by`("12번 환자분") → pending, 기존과 같은 값 → ignored
@@ -99,6 +100,7 @@ source .venv/Scripts/activate
 uvicorn app.main:app --reload      # http://localhost:8000/docs
 pytest -v
 python -m scripts.evaluate [--provider openai]   # 변경 판단 정확도 평가
+python -m scripts.demo_check --provider openai --repeat 5   # 시연 시나리오(tests/fixtures/demo.json) 반복 점검
 
 # 프론트 (frontend 폴더에서)
 npm run dev                        # http://localhost:5173
