@@ -16,7 +16,7 @@
     "steps": [
       {"text": "37번 환자분 3번 진료실로 오세요.", "changes": {"room": "applied"}, "facts": {"room": "3번"}, "my_turn": true},
       {"text": "12번 환자분 5번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "3번"}, "my_turn": false},
-      {"text": "삼십칠 번 환자분, 진료실이 7번으로 변경되었습니다.", "changes": {"room": "applied"}, "facts": {"room": "7번"}},
+      {"text": "삼십칠 번 환자분, 진료실이 7번으로 변경되었습니다.", "changes": {"room": "applied"}, "facts": {"room": "7번"}, "my_turn": true},
       {"text": "십이 번 환자분 5번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false},
       {"text": "137번 환자분 2번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false}
     ]
