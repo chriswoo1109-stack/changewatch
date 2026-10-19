@@ -5,8 +5,10 @@ import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import Icon from "../components/common/Icon";
 import { useCurrentSession } from "../hooks/useCurrentSession";
+import { useInstall } from "../hooks/useInstall";
 import { speechSupported } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
+import { detectPlatform } from "../utils/calendar";
 import { canSpeak } from "../utils/speak";
 
 // 시안 13번(설정): 내 번호·이름 (서버 세션의 my_number·my_name)
@@ -85,6 +87,8 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <InstallCard />
+
       <Card className="space-y-2 text-sm">
         <p className="font-semibold">이 기기에서 쓸 수 있는 기능</p>
         <Support ok={speechSupported} label="실시간 자막" fallback="미지원: 녹음 후 서버 인식 사용" />
@@ -104,5 +108,43 @@ function Support({ ok, label, fallback }: { ok: boolean; label: string; fallback
       {label}
       {!ok && fallback && <span className="text-slate-400">({fallback})</span>}
     </p>
+  );
+}
+
+/** 앱으로 설치하기 (PWA): 안드로이드는 버튼, 아이폰은 방법 안내, 이미 설치됐으면 표시만 */
+function InstallCard() {
+  const { canInstall, installed, install } = useInstall();
+  const platform = detectPlatform();
+
+  return (
+    <Card className="space-y-3">
+      <div>
+        <p className="font-semibold">앱으로 설치하기</p>
+        <p className="text-sm text-slate-500">홈 화면에 추가하면 주소창 없이 앱처럼 바로 열 수 있어요.</p>
+      </div>
+      {installed ? (
+        <p className="flex items-center gap-2 text-sm font-semibold text-brand-600">
+          <Icon name="checkCircle" className="h-5 w-5" />
+          앱으로 실행 중이에요
+        </p>
+      ) : canInstall ? (
+        <Button className="w-full" onClick={install}>
+          홈 화면에 추가
+        </Button>
+      ) : platform === "ios" ? (
+        <ol className="space-y-1.5 text-sm text-slate-600">
+          <li className="flex items-center gap-1.5">
+            1. Safari 아래쪽의 공유 버튼
+            <Icon name="iosShare" className="h-4 w-4 text-brand-600" />을 눌러요
+          </li>
+          <li>2. 목록에서 <b>홈 화면에 추가</b>를 눌러요</li>
+          <li>3. 오른쪽 위 <b>추가</b>를 누르면 끝!</li>
+        </ol>
+      ) : (
+        <p className="text-sm text-slate-600">
+          브라우저 메뉴(오른쪽 위 점 세 개)에서 <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>를 눌러요.
+        </p>
+      )}
+    </Card>
   );
 }
