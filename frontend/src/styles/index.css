@@ -12,6 +12,10 @@
 
   /* 카드 그림자: 아주 옅게 두 겹 */
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 16px rgb(15 23 42 / 0.05);
+
+  /* 보조 글씨 회색(slate-400)을 진하게: 기본값 #94a3b8은 흰 바탕 대비 2.6:1이라 잘 안 읽힘.
+     #687387은 흰 바탕 4.8:1, 회색 배경 4.6:1로 글씨 대비 기준(4.5:1)을 넘습니다. (어르신 사용자 고려) */
+  --color-slate-400: #687387;
 }
 
 /* Tailwind v4는 테두리 기본색이 글자색(검정)이라 연한 회색으로, 입력 중에는 초록 테두리 */
@@ -31,6 +35,9 @@ body {
   background: #f1f5f9;
   font-family: "Pretendard", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   -webkit-tap-highlight-color: transparent;
+  /* 한글을 단어 중간("직/접")이 아니라 띄어쓰기 단위로 줄바꿈. 아주 긴 단어만 넘치지 않게 끊음 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* 화면 깜빡임 알림: 1초에 1번, 3회 (빛 과민 기준인 초당 3회보다 느리게) */

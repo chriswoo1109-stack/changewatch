@@ -28,6 +28,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
   const [error, setError] = useState<string | null>(null);
   // 반영되지 않은 안내(단순 언급, 거절 등)는 흐리게 보여줍니다.
   const muted = change.status === "ignored" || change.status === "rejected";
+  const kindChip = change.status !== "ignored" ? KIND[change.change_type] : undefined;
 
   const confirm = async (approve: boolean) => {
     if (!onConfirm) return;
@@ -43,15 +44,14 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
   };
 
   return (
-    <Card className={`space-y-2 ${change.status === "pending" ? "border-amber-300 bg-amber-50/40" : ""} ${muted ? "opacity-70" : ""}`}>
+    <Card className={`space-y-2 ${change.status === "pending" ? "bg-amber-50/60 ring-2 ring-amber-300" : ""} ${muted ? "opacity-70" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 font-semibold">
-          {KIND[change.change_type] && change.status !== "ignored" && (
-            <span className={`rounded px-1.5 py-0.5 text-xs text-white ${KIND[change.change_type]!.className}`}>
-              {KIND[change.change_type]!.label}
-            </span>
+          {kindChip && (
+            <span className={`rounded px-1.5 py-0.5 text-xs text-white ${kindChip.className}`}>{kindChip.label}</span>
           )}
-          {change.label} <span className="font-normal text-slate-400">· {CHANGE_TYPE_LABEL[change.change_type]}</span>
+          {change.label}
+          {!kindChip && <span className="font-normal text-slate-400">· {CHANGE_TYPE_LABEL[change.change_type]}</span>}
         </span>
         <div className="flex shrink-0 items-center gap-2">
           {showTime && <span className="text-xs text-slate-400">{formatTime(change.created_at)}</span>}
@@ -62,7 +62,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
       <ValueLine change={change} />
 
       <p className="rounded-lg bg-slate-50 p-2 text-sm text-slate-600">“{change.evidence}”</p>
-      <p className="text-xs text-slate-400">{change.reason}</p>
+      <p className="text-sm text-slate-500">{change.reason}</p>
 
       {change.status === "pending" && onConfirm && (
         <div className="space-y-2 pt-1">
@@ -104,7 +104,7 @@ export default function ChangeCard({ change, onConfirm, showTime = false }: Prop
 }
 
 /** 유형별 값 표시: 신규는 새 값만, 취소는 이전 값에 취소선, 나머지는 이전 → 새 값 */
-function ValueLine({ change }: { change: Change }) {
+export function ValueLine({ change }: { change: Change }) {
   if (change.change_type === "cancel") {
     return (
       <p className="text-lg">
