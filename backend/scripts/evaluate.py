@@ -54,7 +54,12 @@ def run_case(extractor, case: dict, keys: set[str]) -> dict:
     facts, me = case["facts"], case.get("me", {})
     candidates = extractor.extract(case["text"], DOMAIN, facts, **me).candidates
     decisions = verify(candidates, facts, case["text"], keys, domain=DOMAIN, **me)
+    return score_case(case, decisions)
 
+
+def score_case(case: dict, decisions: list) -> dict:
+    """판단 결과(Decision 목록)를 문장 세트의 기대 결과와 비교해 채점합니다."""
+    facts = case["facts"]
     after = dict(facts)
     statuses: dict[str, str] = {}  # 같은 key가 여러 번 나오면 마지막 판단
     for d in decisions:
@@ -87,6 +92,10 @@ def run_case(extractor, case: dict, keys: set[str]) -> dict:
         "passed": all(c["status_ok"] and c["value_ok"] for c in checks) and not wrong_applied,
         "checks": checks,
         "wrong_applied": wrong_applied,
+        "after": after,
+        "pending": sum(d.status == "pending" for d in decisions),
+        # 반영해야 하는데(applied만 정답) 반영하지 않은 항목
+        "missed": [c["key"] for c in checks if as_list(c["expected"][0]) == ["applied"] and c["actual"][0] != "applied"],
         "candidates": [
             {**d.candidate.model_dump(), "status": d.status, "reason": d.reason} for d in decisions
         ],

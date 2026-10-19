@@ -106,6 +106,9 @@ def verify(
     def norm(key: str, value: str | None) -> str | None:
         # "오후 세 시"·"3시"와 "오후 3시"를 같은 값으로 보도록 정규화 (시각 항목은 오전/오후 보정까지)
         value = normalize_value(value)
+        # 단위가 정해진 항목은 숫자만 온 값에 단위를 붙인다 ("12" → "12번")
+        if value and (unit := items.get(key, {}).get("unit")) and value.isdigit():
+            value += unit
         return fill_meridiem(value, hours) if key in times else value
 
     def audience(sentence: str):

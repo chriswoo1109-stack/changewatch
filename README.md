@@ -60,6 +60,7 @@ python -m scripts.demo_check --provider openai --repeat 5
 | `frontend/src/pages/` | 화면 (시안 번호 주석 참고) |
 | `docs/api.md` | 프론트·백엔드 약속 |
 | `docs/deploy.md` | 배포 방법 (Neon + Render + Vercel) |
+| `docs/evaluation.md` | 정확도 평가 결과 (발표용 비교표) |
 
 ## 브랜치 규칙
 - `main`: 검증된 시연 버전 / `develop`: 통합 / `feature/fe-*`, `feature/be-*`: 기능 개발
