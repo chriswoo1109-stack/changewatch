@@ -1,4 +1,5 @@
 import type { Change } from "../../types";
+import { valueSize } from "../../utils/format";
 import { iGa } from "../../utils/josa";
 import Icon from "../common/Icon";
 
@@ -16,7 +17,9 @@ export default function ChangeHero({ change }: { change: Change }) {
           <Icon name="close" className="h-4 w-4" />
           {iGa(change.label)} 취소됐어요
         </p>
-        <p className="mt-2 text-4xl font-black text-slate-400 line-through decoration-red-400 decoration-4">{change.old_value ?? change.label}</p>
+        <p className={`mt-2 break-keep font-black text-slate-400 line-through decoration-red-400 decoration-4 ${valueSize(change.old_value, "text-4xl", "text-2xl")}`}>
+          {change.old_value ?? change.label}
+        </p>
         <p className="mt-3 text-sm text-slate-500">“{change.evidence}”</p>
       </div>
     );
@@ -26,7 +29,7 @@ export default function ChangeHero({ change }: { change: Change }) {
     return (
       <div className="rounded-3xl bg-white p-5 shadow-card">
         <p className="text-sm font-semibold text-brand-600">새로 정리했어요 · {change.label}</p>
-        <p className="mt-1 break-keep text-4xl font-black text-slate-900">{change.new_value}</p>
+        <p className={`mt-1 break-keep font-black text-slate-900 ${valueSize(change.new_value, "text-4xl", "text-2xl")}`}>{change.new_value}</p>
         <p className="mt-3 text-sm text-slate-500">“{change.evidence}”</p>
       </div>
     );
@@ -42,7 +45,7 @@ export default function ChangeHero({ change }: { change: Change }) {
       <div className="relative mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-2xl font-bold text-white/60 line-through">{change.old_value}</span>
         <Icon name="arrowRight" className="h-6 w-6 text-white/80" />
-        <span className="break-keep text-5xl font-black tracking-tight">{change.new_value}</span>
+        <span className={`break-keep font-black tracking-tight ${valueSize(change.new_value, "text-5xl", "text-2xl")}`}>{change.new_value}</span>
       </div>
       <p className="relative mt-4 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/90">“{change.evidence}”</p>
     </div>

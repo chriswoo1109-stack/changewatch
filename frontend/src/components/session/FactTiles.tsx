@@ -1,5 +1,5 @@
 import type { Change, Fact } from "../../types";
-import { changedFrom, formatTime } from "../../utils/format";
+import { changedFrom, formatTime, valueSize } from "../../utils/format";
 import Icon, { type IconName } from "../common/Icon";
 
 // 항목별 아이콘 (backend/app/domains/hospital.json의 key). 없는 항목은 기본 아이콘.
@@ -10,6 +10,7 @@ const ICON: Record<string, IconName> = {
   visit_time: "clock",
   medication: "pill",
   next_visit: "calendarDays",
+  supplies: "backpack",
 };
 
 interface Props {
@@ -47,7 +48,7 @@ export default function FactTiles({ facts, recent, canceled }: Props) {
               <Icon name={ICON[f.key] ?? "info"} className="h-5 w-5" />
             </span>
             <p className="mt-3 text-sm text-slate-500">{f.label}</p>
-            <p className="break-keep text-2xl font-extrabold leading-tight text-slate-900">{f.value}</p>
+            <p className={`break-keep font-extrabold leading-tight text-slate-900 ${valueSize(f.value, "text-2xl", "text-base")}`}>{f.value}</p>
             <p className="mt-1 text-xs text-slate-400">
               {old ? (
                 <>
@@ -66,7 +67,7 @@ export default function FactTiles({ facts, recent, canceled }: Props) {
             <Icon name={ICON[c.key] ?? "info"} className="h-5 w-5" />
           </span>
           <p className="mt-3 text-sm text-slate-500">{c.label}</p>
-          <p className="text-2xl font-extrabold leading-tight text-slate-300 line-through">{c.old_value}</p>
+          <p className={`break-keep font-extrabold leading-tight text-slate-300 line-through ${valueSize(c.old_value, "text-2xl", "text-base")}`}>{c.old_value}</p>
           <p className="mt-1 text-xs font-semibold text-red-500">취소됨</p>
         </li>
       ))}
