@@ -3,7 +3,7 @@
 // - "처방전은 약국에 제출하세요"처럼 할 일 안내도 안내(notice) → 서버가 할 일(todos)로 뽑습니다
 //   단, "보건 진료실도 이동하세요"처럼 추적 항목(진료실 등)인데 값(숫자)이 없는 문장은
 //   분석해도 엉뚱한 값이 저장될 뿐이라 뺍니다.
-// - 내 정보 키워드(대기번호·이름)가 있으면 내 안내(mine) → 알림 대상
+// - 내 번호("37번 환자분", "삼십칠 번")나 이름이 불리면 내 안내(mine) → 알림 대상 (hasMyKeyword)
 // - 나머지는 소음(noise) → 분석하지 않음
 
 export type SentenceKind = "mine" | "notice" | "noise";
@@ -72,10 +72,46 @@ export function splitSentences(text: string) {
 }
 
 /** 내 키워드가 들어 있는지 확인합니다. 대기번호 15는 "150"과 구분합니다. */
+// 내 번호 판단은 backend/app/services/my_turn.py와 같은 규칙입니다. 한쪽을 바꾸면 다른 쪽도 맞춥니다.
+// - "번"이 붙은 번호만 부른 것으로 봅니다 → "오후 2시 37분", "체온 37.5도"는 알림 없음
+// - 번호 바로 뒤에 장소·값이 오면 부른 게 아닙니다 → "37번 진료실로 가세요", "진료실이 37번으로"
+// - 음성 인식이 "삼십칠 번"처럼 한글로 적어도 알아봅니다
+const NOT_A_CALL = String.raw`(?!\s*(?:진료실|진찰실|검사실|창구|호실|층)|으로|로(?![가-힣]))`;
+
+const SINO_DIGITS: Record<string, number> = { 일: 1, 이: 2, 삼: 3, 사: 4, 오: 5, 육: 6, 칠: 7, 팔: 8, 구: 9 };
+
+// 한자어 숫자를 정수로 바꿉니다 ("삼십칠" → 37). "삼칠"처럼 자릿수 없이 이어지면 숫자가 아님(null).
+function sinoToInt(word: string): number | null {
+  let total = 0;
+  let current = 0;
+  for (const ch of word) {
+    if (ch in SINO_DIGITS) {
+      if (current) return null;
+      current = SINO_DIGITS[ch];
+    } else if (ch === "십") {
+      total += (current || 1) * 10;
+      current = 0;
+    } else if (ch === "백") {
+      total += (current || 1) * 100;
+      current = 0;
+    }
+  }
+  return total + current;
+}
+
+// "삼십칠 번" → "37번". 한 글자를 붙여 쓴 "이번", "일번"은 일반 단어일 가능성이 커서 그대로 둡니다.
+function koreanCallNumbers(sentence: string) {
+  return sentence.replace(/(?<![가-힣])([일이삼사오육칠팔구십백]+)(\s*)번/g, (whole, word: string, space: string) => {
+    if (word.length === 1 && !space) return whole;
+    const n = sinoToInt(word);
+    return n === null ? whole : `${n}번`;
+  });
+}
+
 export function hasMyKeyword(sentence: string, my: MyKeywords) {
-  const num = my.waitNumber.replace(/\D/g, "");
+  const num = my.waitNumber.replace(/\D/g, "").replace(/^0+/, "");
   const name = my.name.trim();
-  if (num && new RegExp(`(?<!\\d)${num}(?!\\d)`).test(sentence)) return true;
+  if (num && new RegExp(String.raw`(?<!\d)0*${num}\s*번${NOT_A_CALL}`).test(koreanCallNumbers(sentence))) return true;
   if (name && sentence.replace(/\s/g, "").includes(name.replace(/\s/g, ""))) return true;
   return false;
 }
