@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
+import EmptyState from "../components/common/EmptyState";
+import Skeleton from "../components/common/Skeleton";
 import Icon from "../components/common/Icon";
 import PendingBanner from "../components/common/PendingBanner";
 import CalendarList from "../components/session/CalendarList";
@@ -15,10 +17,22 @@ import { canSpeak, describeFacts, speak } from "../utils/speak";
 // 시안 5번(오늘의 안내 정리)
 export default function SessionPage() {
   const navigate = useNavigate();
-  const { session, error } = useCurrentSession();
+  const { session, loading, error } = useCurrentSession();
   const { history } = useHistory();
   const [toast, setToast] = useState<string | null>(null);
   if (error) return <p className="p-5 text-red-600">{error}</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4 p-5">
+        <h1 className="text-xl font-bold">오늘의 안내 정리</h1>
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+        </div>
+        <Skeleton className="h-28" />
+      </div>
+    );
+  }
   if (!session) return <NoSession />;
 
   const recent = latestAppliedChanges(history);
@@ -111,12 +125,9 @@ export default function SessionPage() {
 
 function NoSession() {
   return (
-    <div className="space-y-3 p-5">
+    <div className="space-y-4 p-5">
       <h1 className="text-xl font-bold">오늘의 안내 정리</h1>
-      <p className="text-slate-500">진행 중인 방문이 없습니다.</p>
-      <Link to="/" className="inline-block text-sm text-brand-600 underline">
-        홈에서 방문 시작하기
-      </Link>
+      <EmptyState icon="list" title="진행 중인 방문이 없어요" description="방문을 시작하면 들은 안내가 여기에 정리돼요." action={{ to: "/", label: "방문 시작하기" }} />
     </div>
   );
 }

@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { confirmChange } from "../api/sessions";
 import AlertFlash from "../components/common/AlertFlash";
 import Button from "../components/common/Button";
+import EmptyState from "../components/common/EmptyState";
 import ChangeCard from "../components/result/ChangeCard";
 import ChangeHero from "../components/result/ChangeHero";
 import Icon from "../components/common/Icon";
 import { useAnalyze } from "../hooks/useAnalyze";
+import { useCurrentSession } from "../hooks/useCurrentSession";
 import { useSessionStore } from "../stores/sessionStore";
 import type { AnalyzeResponse, Change, Todo } from "../types";
 import { canSpeak, describeChange, describeTodos, speak } from "../utils/speak";
@@ -16,11 +18,8 @@ export default function ResultPage() {
   const { lastResult } = useSessionStore();
   if (!lastResult) {
     return (
-      <div className="space-y-3 p-5">
-        <p className="text-slate-500">분석 결과가 없습니다.</p>
-        <Link to="/" className="text-sm text-brand-600 underline">
-          홈에서 안내 입력하기
-        </Link>
+      <div className="p-5">
+        <EmptyState icon="mic" title="아직 분석한 안내가 없어요" description="안내를 듣거나 직접 입력하면 바뀐 정보를 정리해 드려요." action={{ to: "/", label: "안내 입력하기" }} />
       </div>
     );
   }
@@ -42,12 +41,16 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
     if (myTurn) speak(`내 차례입니다. ${myTurn.evidence}`);
   }, [myTurn]);
 
+  // 아래 "지금 유효한 정보" 요약용. 확인 요청을 처리하면 다시 불러옵니다.
+  const { session, reload } = useCurrentSession();
+
   const onConfirm = async (changeId: number, approve: boolean) => {
     const updated = await confirmChange(changeId, approve);
     setLastResult({
       ...lastResult,
       changes: lastResult.changes.map((c) => (c.id === changeId ? updated : c)),
     });
+    reload();
   };
 
   const pending = lastResult.changes.filter((c) => c.status === "pending");
@@ -128,6 +131,22 @@ function ResultView({ lastResult }: { lastResult: AnalyzeResponse }) {
             </>
           )}
         </div>
+      )}
+
+      {session && session.facts.length > 0 && (
+        <Link to="/session" className="block rounded-2xl bg-white p-4 shadow-card">
+          <p className="flex items-center justify-between text-sm font-semibold text-slate-500">
+            지금 유효한 정보
+            <Icon name="chevronRight" className="h-4 w-4" />
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {session.facts.map((f) => (
+              <span key={f.key} className="rounded-full bg-brand-50 px-3 py-1 text-sm text-brand-700">
+                {f.label} <b>{f.value}</b>
+              </span>
+            ))}
+          </div>
+        </Link>
       )}
 
       <Button className="w-full" onClick={() => navigate("/session")}>
