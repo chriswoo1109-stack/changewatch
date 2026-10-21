@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { wakeServer } from "./api/client";
 import BottomNav from "./components/common/BottomNav";
+import ServerWaitBanner from "./components/common/ServerWaitBanner";
 import HomePage from "./pages/HomePage";
 import RecordingPage from "./pages/RecordingPage";
 import ResultPage from "./pages/ResultPage";
@@ -10,6 +13,11 @@ import SettingsPage from "./pages/SettingsPage";
 import ShowPage from "./pages/ShowPage";
 
 export default function App() {
+  // 앱을 열자마자 잠든 서버를 미리 깨워 둡니다 (Render 무료 서버)
+  useEffect(() => {
+    wakeServer();
+  }, []);
+
   return (
     // 휴대폰 화면 폭으로 고정해 앱처럼 보이게 합니다.
     <div className="mx-auto flex min-h-full max-w-md flex-col bg-slate-50 shadow-sm">
@@ -27,6 +35,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <ServerWaitBanner />
       <BottomNav />
     </div>
   );
