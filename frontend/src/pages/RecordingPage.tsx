@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { transcribeAudio } from "../api/announcements";
 import AlertFlash from "../components/common/AlertFlash";
 import Icon from "../components/common/Icon";
+import ListenNotice from "../components/common/ListenNotice";
 import ListeningOrb from "../components/common/ListeningOrb";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useCurrentSession } from "../hooks/useCurrentSession";
@@ -10,6 +11,7 @@ import { useRecorder } from "../hooks/useRecorder";
 import { speechSupported, useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
 import { classifySentence, filterAnnouncement, isCompleteSentence, pickAlternative, type SentenceKind } from "../utils/filter";
+import { speak, unlockSpeech } from "../utils/speak";
 
 interface Line {
   text: string;
@@ -64,7 +66,10 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
     const line = { text, kind: classifySentence(text, myKeywords) };
     linesRef.current = [...prev, line];
     setLines(linesRef.current);
-    if (line.kind === "mine" && last?.kind !== "mine") setAlert(`내 차례예요! “${text}”`);
+    if (line.kind === "mine" && last?.kind !== "mine") {
+      setAlert(`내 차례예요! “${text}”`);
+      speak("내 차례입니다"); // 화면을 안 보고 있어도 알 수 있게 소리로도
+    }
   });
 
   // 중괄호 필수: 최신 Chrome의 scrollIntoView는 Promise를 돌려줘서, 그대로 반환하면 React가 정리 함수로 착각해 화면이 멈춥니다.
@@ -212,6 +217,20 @@ interface ShellProps {
 /** 녹음 화면 공통 틀: 닫기, 안내 문구, 에러, 시작/중지 버튼 */
 function Shell({ title, recording, busy, error, onStart, onStop, onFallback, children }: ShellProps) {
   const navigate = useNavigate();
+  const { listenNoticeAgreed, agreeListenNotice } = useSessionStore();
+  const [showNotice, setShowNotice] = useState(false);
+
+  // 버튼을 누른 그 순간에 소리를 열어야 아이폰이 막지 않습니다.
+  const startListening = () => {
+    unlockSpeech();
+    onStart();
+  };
+  const handleStart = () => (listenNoticeAgreed ? startListening() : setShowNotice(true));
+  const agreeAndStart = () => {
+    agreeListenNotice();
+    setShowNotice(false);
+    startListening();
+  };
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col items-center gap-4 bg-slate-900 p-5 text-white">
       <div className="flex w-full items-center justify-between">
@@ -243,7 +262,7 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
         </div>
       )}
       {!recording ? (
-        <button className="mb-2 flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
+        <button className="mb-2 flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={handleStart} disabled={busy}>
           <Icon name={busy ? "spinner" : "mic"} className="h-5 w-5" />
           {busy ? "처리 중..." : "듣기 시작"}
         </button>
@@ -253,6 +272,7 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
           중지하고 분석하기
         </button>
       )}
+      {showNotice && <ListenNotice onAgree={agreeAndStart} onCancel={() => setShowNotice(false)} />}
     </div>
   );
 }
