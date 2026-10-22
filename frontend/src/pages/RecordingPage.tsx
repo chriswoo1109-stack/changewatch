@@ -12,7 +12,7 @@ import { useAwayNotice, useWakeLock } from "../hooks/useListenGuard";
 import { useRecorder } from "../hooks/useRecorder";
 import { speechSupported, useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
-import { classifySentence, filterAnnouncement, isCompleteSentence, pickAlternative, type SentenceKind } from "../utils/filter";
+import { classifySentence, filterAnnouncement, isCompleteSentence, pickAlternative, stripGreeting, type SentenceKind } from "../utils/filter";
 import { speak, unlockSpeech } from "../utils/speak";
 
 interface Line {
@@ -103,7 +103,8 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
     setWanted(false);
     away.dismiss();
     await stop();
-    const kept = linesRef.current.filter((l) => l.kind !== "noise").map((l) => l.text);
+    // 분석에는 인사말을 뗀 문장을 보냅니다 (자막에는 들은 그대로 보여줌)
+    const kept = linesRef.current.filter((l) => l.kind !== "noise").map((l) => stripGreeting(l.text) || l.text);
     if (kept.length === 0) return setEmptyError("안내로 보이는 문장을 듣지 못했어요. 다시 들어 보거나 직접 입력해 주세요.");
     await analyze(kept.join("\n"));
   };
