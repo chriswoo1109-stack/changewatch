@@ -84,6 +84,7 @@
   {"name": "STT - 문장부호 없음", "tags": ["stt", "multi"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번입니다 검사는 오후 3시입니다", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "STT - 한글 숫자", "tags": ["stt", "change", "normalize"], "facts": {"room": "3번"}, "text": "진료실 오 번으로 바뀌었어요", "expect": {"room": ["applied", "5번"]}},
 
+  {"name": "STT - 취소 오타 (취서, 프론트 보정 전 원문)", "tags": ["stt", "cancel"], "mock_xfail": true, "facts": {"exam_time": "오후 2시"}, "text": "오후 2시 검사가 취서됐습니다.", "expect": {"exam_time": ["applied", null]}},
   {"name": "추적 항목 아님 - 주차", "tags": ["out_of_scope"], "facts": {}, "text": "주차는 지하 2층에 하시면 됩니다.", "expect": {}},
   {"name": "추적 항목 아님 - 수납", "tags": ["out_of_scope"], "facts": {}, "text": "수납은 1층 원무과에서 해 주세요.", "expect": {}}
 ]
