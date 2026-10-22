@@ -18,7 +18,10 @@ export function useRecorder() {
   const start = async () => {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 병원 대기실 소음 대비: 잡음 제거·울림 제거·음량 자동 조절 (지원하지 않는 브라우저는 무시하고 그냥 녹음)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+      });
       const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
       const recorder = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
