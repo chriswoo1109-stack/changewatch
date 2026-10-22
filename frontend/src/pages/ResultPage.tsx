@@ -214,7 +214,11 @@ function Headline({ applied, pending, todos, total }: { applied: Change[]; pendi
 
   return (
     <header>
-      <p className="text-xs font-semibold text-brand-600">AI 정리 결과</p>
+      {/* 서비스 원칙: AI가 제안하고 규칙 검증(verifier)이 확인한 결과만 보여줌 */}
+      <p className="flex items-center gap-1 text-xs font-semibold text-brand-600">
+        <Icon name="checkCircle" className="h-3.5 w-3.5" />
+        AI 정리 · 규칙으로 한 번 더 확인
+      </p>
       <h1 className="text-xl font-bold">{title}</h1>
       {sub && <p className="text-sm text-slate-500">{sub}</p>}
       {total > 0 && changed === 0 && added === 0 && pending.length === 0 && todos.length === 0 && (
