@@ -1,7 +1,8 @@
 import os
 
 # 앱 설정을 불러오기 전에 테스트용 값을 먼저 넣습니다. (로컬 .env의 DB·OpenAI 설정을 쓰지 않도록)
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+# PostgreSQL에서 확인하려면: TEST_DATABASE_URL=postgresql://... pytest
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "sqlite:///./test.db")
 os.environ["LLM_PROVIDER"] = "mock"
 
 import pytest  # noqa: E402
