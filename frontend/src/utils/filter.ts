@@ -27,6 +27,22 @@ const NUMBER_ITEM_WORDS = ["진료실", "순번", "대기번호", "대기 번호
 const TEXT_ITEM_WORDS = ["준비물", "챙겨", "가져오세요", "지참", "복용", "드세요", "약은"];
 const TRACK_WORDS = [...NUMBER_ITEM_WORDS, ...TEXT_ITEM_WORDS];
 
+// 안내 앞뒤에 붙는 인사말. "안녕하세요"처럼 "~하세요"로 끝나도 할 일이 아니므로 떼고 판단합니다.
+const GREETINGS = [
+  "안녕하세요", "안녕하십니까", "안녕히 가세요", "안녕히 계세요", "어서 오세요",
+  "수고하세요", "수고하십시오", "수고 많으세요", "고생하세요", "고생 많으세요",
+  "감사합니다", "고맙습니다", "반갑습니다", "좋은 하루 되세요", "좋은 하루 보내세요",
+].map((g) => g.replace(/ /g, "\\s?")); // "안녕히가세요"처럼 붙여 써도 인식
+const GREETING = `(?:${GREETINGS.join("|")})`;
+const CALLER = "(?:(?:여러분|환자분들?|보호자분들?|고객님)\\s*,?\\s*)?"; // "환자분들, 안녕하세요"
+const LEADING_GREETING = new RegExp(`^(?:${CALLER}${GREETING}[.!?~,\\s]*)+`);
+const TRAILING_GREETING = new RegExp(`(?:[.!?~,\\s]*${GREETING})+[.!?~\\s]*$`);
+
+/** 문장 앞뒤 인사말을 뗍니다. "안녕하세요 처방전은 약국에 제출하세요" → "처방전은 약국에 제출하세요", "안녕하세요" → "" */
+export function stripGreeting(sentence: string) {
+  return sentence.trim().replace(LEADING_GREETING, "").replace(TRAILING_GREETING, "").trim();
+}
+
 // 음성 인식이 자주 틀리는 안내 단어 보정. 실제 시연 중 나온 오인식을 모아 둔 목록입니다.
 // ("진료실"은 발음이 [질료실]이라 "증류시리", "직묘실", "진료신도" 등으로 자주 들립니다)
 const MISHEARD = "(?:진료|증료|증류|직묘|진뇨|질료|질려|진려|진류|질류|진주)\\s?"; // 띄어쓰기 허용
@@ -123,9 +139,12 @@ export function hasMyKeyword(sentence: string, my: MyKeywords) {
 
 export function classifySentence(sentence: string, my: MyKeywords): SentenceKind {
   if (hasMyKeyword(sentence, my)) return "mine";
-  if (/\d/.test(sentence) || NO_VALUE_WORDS.some((w) => sentence.includes(w))) return "notice";
-  if (TEXT_ITEM_WORDS.some((w) => sentence.includes(w))) return "notice";
-  if (TODO_ENDING.test(sentence.trim()) && !NUMBER_ITEM_WORDS.some((w) => sentence.includes(w))) return "notice";
+  // 인사말을 뗀 나머지로 판단 ("안녕하세요"만 있으면 남는 게 없어 소음)
+  const core = stripGreeting(sentence);
+  if (!core) return "noise";
+  if (/\d/.test(core) || NO_VALUE_WORDS.some((w) => core.includes(w))) return "notice";
+  if (TEXT_ITEM_WORDS.some((w) => core.includes(w))) return "notice";
+  if (TODO_ENDING.test(core) && !NUMBER_ITEM_WORDS.some((w) => core.includes(w))) return "notice";
   return "noise";
 }
 
@@ -138,5 +157,7 @@ export function isCompleteSentence(sentence: string) {
 export function filterAnnouncement(text: string, my: MyKeywords) {
   const sentences = splitSentences(text).map((s) => ({ text: s, kind: classifySentence(s, my) }));
   const kept = sentences.filter((s) => s.kind !== "noise");
-  return { sentences, kept: kept.map((s) => s.text).join("\n"), hasMine: kept.some((s) => s.kind === "mine") };
+  // 분석에는 인사말을 뗀 문장을 보냅니다 (할 일이 "안녕하세요 처방전은…"으로 저장되지 않게)
+  const keptText = kept.map((s) => stripGreeting(s.text) || s.text).join("\n");
+  return { sentences, kept: keptText, hasMine: kept.some((s) => s.kind === "mine") };
 }
