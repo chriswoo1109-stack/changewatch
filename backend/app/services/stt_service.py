@@ -4,11 +4,12 @@ from fastapi import HTTPException
 
 from app.core.config import settings
 from app.domains import stt_prompt
+from app.services import cost_guard
 
 logger = logging.getLogger(__name__)
 
-# OpenAI 음성 인식 API가 받는 최대 파일 크기
-MAX_AUDIO_BYTES = 25 * 1024 * 1024
+# 최대 파일 크기. OpenAI 한도는 25MB지만, 안내 한 번 녹음은 10MB(webm 기준 수십 분)면 충분하고 요금도 아낍니다.
+MAX_AUDIO_BYTES = 10 * 1024 * 1024
 
 
 def transcribe(filename: str, data: bytes, content_type: str | None, domain: str = "hospital") -> str:
@@ -25,6 +26,8 @@ def transcribe(filename: str, data: bytes, content_type: str | None, domain: str
         raise HTTPException(status_code=400, detail="녹음된 소리가 없습니다. 다시 녹음해 주세요.")
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(status_code=413, detail="녹음이 너무 깁니다. 짧게 나눠서 다시 녹음해 주세요.")
+    if not cost_guard.use_ai_budget():
+        raise HTTPException(status_code=429, detail="오늘 음성 인식 사용량을 다 썼어요. 텍스트로 입력해 주세요.")
 
     from openai import OpenAI
 
