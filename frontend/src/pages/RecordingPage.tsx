@@ -2,14 +2,18 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { transcribeAudio } from "../api/announcements";
 import AlertFlash from "../components/common/AlertFlash";
+import AwayNotice from "../components/common/AwayNotice";
 import Icon from "../components/common/Icon";
+import ListenNotice from "../components/common/ListenNotice";
 import ListeningOrb from "../components/common/ListeningOrb";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useCurrentSession } from "../hooks/useCurrentSession";
+import { useAwayNotice, useWakeLock } from "../hooks/useListenGuard";
 import { useRecorder } from "../hooks/useRecorder";
 import { speechSupported, useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
 import { classifySentence, filterAnnouncement, isCompleteSentence, pickAlternative, type SentenceKind } from "../utils/filter";
+import { speak, unlockSpeech } from "../utils/speak";
 
 interface Line {
   text: string;
@@ -51,6 +55,8 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
   const [alert, setAlert] = useState<string | null>(null);
   const [emptyError, setEmptyError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // 사용자가 듣기를 켜 둔 상태인지. 다른 앱에 다녀와서 인식이 끊겨도 true로 남아 "멈춰 있었어요" 안내를 띄웁니다.
+  const [wanted, setWanted] = useState(false);
 
   const { listening, ready, interim, error: micError, start, stop } = useSpeechRecognition((alternatives) => {
     let text = pickAlternative(alternatives, myKeywords);
@@ -64,7 +70,10 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
     const line = { text, kind: classifySentence(text, myKeywords) };
     linesRef.current = [...prev, line];
     setLines(linesRef.current);
-    if (line.kind === "mine" && last?.kind !== "mine") setAlert(`내 차례예요! “${text}”`);
+    if (line.kind === "mine" && last?.kind !== "mine") {
+      setAlert(`내 차례예요! “${text}”`);
+      speak("내 차례입니다"); // 화면을 안 보고 있어도 알 수 있게 소리로도
+    }
   });
 
   // 중괄호 필수: 최신 Chrome의 scrollIntoView는 Promise를 돌려줘서, 그대로 반환하면 React가 정리 함수로 착각해 화면이 멈춥니다.
@@ -72,14 +81,27 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [lines, interim]);
 
+  const wake = useWakeLock(listening);
+  const away = useAwayNotice(wanted);
+
   const begin = () => {
     linesRef.current = [];
     setLines([]);
     setEmptyError(null);
+    setWanted(true);
+    start();
+  };
+
+  // 다른 앱에 다녀와 끊긴 듣기를 이어서 (지금까지 자막은 유지)
+  const resume = () => {
+    away.dismiss();
+    unlockSpeech();
     start();
   };
 
   const finish = async () => {
+    setWanted(false);
+    away.dismiss();
     await stop();
     const kept = linesRef.current.filter((l) => l.kind !== "noise").map((l) => l.text);
     if (kept.length === 0) return setEmptyError("안내로 보이는 문장을 듣지 못했어요. 다시 들어 보거나 직접 입력해 주세요.");
@@ -96,6 +118,12 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
       onStart={begin}
       onStop={finish}
       onFallback={micError ? onFallback : undefined}
+      wake={wake}
+      notice={
+        away.awaySeconds !== null && (
+          <AwayNotice seconds={away.awaySeconds} stopped={!listening} onResume={resume} onDismiss={away.dismiss} />
+        )
+      }
       title={listening ? "듣고 있어요. 안내 문장만 골라서 분석해요" : loading ? "바뀐 정보를 찾는 중..." : "버튼을 눌러 듣기를 시작하세요"}
     >
       {/* 실시간 큰 자막 */}
@@ -148,14 +176,21 @@ function RecordAndUpload({ sessionId }: { sessionId: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const [sttError, setSttError] = useState<string | null>(null);
+  const [wanted, setWanted] = useState(false);
+  const wake = useWakeLock(recording);
+  const away = useAwayNotice(wanted);
 
   const begin = () => {
     setStatus(null);
     setSttError(null);
+    setWanted(true);
+    away.dismiss();
     start();
   };
 
   const finish = async () => {
+    setWanted(false);
+    away.dismiss();
     const audio = await stop();
     if (!audio) return;
     setTranscribing(true);
@@ -187,6 +222,12 @@ function RecordAndUpload({ sessionId }: { sessionId: string }) {
       recording={recording}
       onStart={begin}
       onStop={finish}
+      wake={wake}
+      notice={
+        away.awaySeconds !== null && (
+          <AwayNotice seconds={away.awaySeconds} stopped={!recording} onResume={begin} onDismiss={away.dismiss} />
+        )
+      }
       title={recording ? "안내 방송을 듣고 있어요..." : transcribing || loading ? "분석하고 있어요" : "버튼을 눌러 녹음을 시작하세요"}
     >
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
@@ -206,12 +247,28 @@ interface ShellProps {
   onStart: () => void;
   onStop: () => void;
   onFallback?: () => void; // 실시간 자막 실패 시 녹음 방식으로 전환
+  wake: { supported: boolean; locked: boolean }; // 화면 꺼짐 방지 상태
+  notice?: ReactNode; // 다른 앱에 다녀왔을 때 안내
   children: ReactNode;
 }
 
 /** 녹음 화면 공통 틀: 닫기, 안내 문구, 에러, 시작/중지 버튼 */
-function Shell({ title, recording, busy, error, onStart, onStop, onFallback, children }: ShellProps) {
+function Shell({ title, recording, busy, error, onStart, onStop, onFallback, wake, notice, children }: ShellProps) {
   const navigate = useNavigate();
+  const { listenNoticeAgreed, agreeListenNotice } = useSessionStore();
+  const [showNotice, setShowNotice] = useState(false);
+
+  // 버튼을 누른 그 순간에 소리를 열어야 아이폰이 막지 않습니다.
+  const startListening = () => {
+    unlockSpeech();
+    onStart();
+  };
+  const handleStart = () => (listenNoticeAgreed ? startListening() : setShowNotice(true));
+  const agreeAndStart = () => {
+    agreeListenNotice();
+    setShowNotice(false);
+    startListening();
+  };
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col items-center gap-4 bg-slate-900 p-5 text-white">
       <div className="flex w-full items-center justify-between">
@@ -219,12 +276,18 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
           <Icon name="close" className="h-7 w-7" />
         </button>
         {recording && (
-          <span className="flex animate-pulse items-center gap-1.5 text-sm text-red-400">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-            듣는 중
+          <span className="text-right">
+            <span className="flex animate-pulse items-center justify-end gap-1.5 text-sm text-red-400">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              듣는 중
+            </span>
+            <span className="block text-xs text-slate-400">
+              {wake.locked ? "화면 꺼짐 방지 중" : wake.supported ? "" : "화면이 꺼지지 않게 해 주세요"}
+            </span>
           </span>
         )}
       </div>
+      {notice}
       <p className="text-center text-slate-300">{title}</p>
       {children}
       {error && (
@@ -243,7 +306,7 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
         </div>
       )}
       {!recording ? (
-        <button className="mb-2 flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={onStart} disabled={busy}>
+        <button className="mb-2 flex items-center gap-2 rounded-full bg-brand-600 px-8 py-4 text-lg font-semibold disabled:bg-slate-600" onClick={handleStart} disabled={busy}>
           <Icon name={busy ? "spinner" : "mic"} className="h-5 w-5" />
           {busy ? "처리 중..." : "듣기 시작"}
         </button>
@@ -253,6 +316,7 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, chi
           중지하고 분석하기
         </button>
       )}
+      {showNotice && <ListenNotice onAgree={agreeAndStart} onCancel={() => setShowNotice(false)} />}
     </div>
   );
 }

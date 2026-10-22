@@ -15,6 +15,18 @@ export function speak(text: string) {
   window.speechSynthesis.speak(u);
 }
 
+/**
+ * 아이폰은 사용자가 화면을 누르기 전에는 소리(speechSynthesis)를 막습니다.
+ * "듣기 시작" 버튼을 누를 때 소리 없는 문장을 한 번 읽어 미리 열어 두면,
+ * 나중에 내 차례 알림을 소리로 읽어줄 수 있습니다.
+ */
+export function unlockSpeech() {
+  if (!canSpeak) return;
+  const u = new SpeechSynthesisUtterance(" ");
+  u.volume = 0;
+  window.speechSynthesis.speak(u);
+}
+
 export function stopSpeaking() {
   if (canSpeak) window.speechSynthesis.cancel();
 }
