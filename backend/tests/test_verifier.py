@@ -197,3 +197,25 @@ def test_bare_number_gets_unit():
     c = Candidate(key="wait_number", value="12", change_type="new", evidence=text, confidence=1.0)
     [d] = verify([c], {}, text, KEYS, domain="hospital")
     assert (d.status, d.candidate.value) == ("applied", "12번")
+
+
+@pytest.mark.parametrize("change_type", ["uncertain", "change", "new"])
+def test_same_value_is_ignored_even_if_uncertain(change_type):
+    text = "아마 진료실은 5번일 겁니다."
+    c = Candidate(key="room", value="5번", change_type=change_type, evidence=text, confidence=0.5)
+    [d] = verify([c], {"room": "5번"}, text, KEYS, domain="hospital")
+    assert d.status == "ignored"
+
+
+def test_uncertain_different_value_still_pending():
+    text = "아마 진료실은 7번일 겁니다."
+    c = Candidate(key="room", value="7번", change_type="uncertain", evidence=text, confidence=0.5)
+    [d] = verify([c], {"room": "5번"}, text, KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+def test_cancel_with_same_value_still_applies():
+    text = "오후 2시 검사는 취소되었습니다."
+    c = Candidate(key="exam_time", value="오후 2시", change_type="cancel", evidence=text, confidence=0.9)
+    [d] = verify([c], {"exam_time": "오후 2시"}, text, KEYS, domain="hospital")
+    assert d.status == "applied"

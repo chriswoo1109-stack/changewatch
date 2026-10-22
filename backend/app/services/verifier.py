@@ -160,6 +160,10 @@ def verify(
         # 3-2. 값이 항목 이름을 꾸미기만 하는 문장은 단순 언급 ("5번 진료실은 지금 혼잡합니다")
         elif value_only_describes(c.value, normalize_value(sentence), item_names(c.key)):
             decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
+        # 3-3. 확신 없는 말투여도 이미 저장된 값과 같으면 물을 필요가 없다 (이미 5번인데 "아마 5번일 겁니다")
+        #      취소는 값이 같아도 의미가 있으므로 제외 ("오후 2시 검사는 취소되었습니다")
+        elif c.change_type != "cancel" and c.value and old is not None and norm(c.key, old) == c.value:
+            decide("ignored", "기존 정보와 같은 값입니다")
         # 4. 말하는 사람이 확신하지 않거나(AI가 놓쳐도 표현으로 확인) AI 신뢰도가 낮으면 확인 요청
         elif c.change_type == "uncertain" or c.confidence < threshold or has_uncertain_words(sentence):
             decide("pending", "확실하지 않은 안내라 확인이 필요합니다")
