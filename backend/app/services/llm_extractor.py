@@ -20,8 +20,7 @@ from app.services.verifier import CHANGE_WORDS, DIRECTIVE_RE, UNCERTAIN_WORDS
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-PROMPT_PATH =Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
+PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "extract.txt"
 
 CORRECTION_WORDS = ["아니라", "정정", "잘못"]
 CANCEL_WORDS = ["취소"]

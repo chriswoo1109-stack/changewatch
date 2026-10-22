@@ -101,6 +101,7 @@ uvicorn app.main:app --reload      # http://localhost:8000/docs
 pytest -v
 python -m scripts.evaluate [--provider openai]   # 변경 판단 정확도 평가
 python -m scripts.demo_check --provider openai --repeat 5   # 시연 시나리오(tests/fixtures/demo.json) 반복 점검
+python -m scripts.demo_check --base-url https://<배포 주소>   # 배포 서버로 같은 시나리오 점검 (서버 깨우기·AI 설정 확인)
 python -m scripts.report --provider openai --repeat 3   # 발표용 비교표 (AI 단독 vs 규칙 검증), 결과는 docs/evaluation.md에 정리
 
 # 프론트 (frontend 폴더에서)

@@ -7,6 +7,7 @@ tests/fixtures/demo.json의 시연 시나리오를 실제 API 흐름(세션 생�
 실행 (backend 폴더에서):
     python -m scripts.demo_check                              # 모의 분석기
     python -m scripts.demo_check --provider openai --repeat 5 # 실제 AI로 5번 반복 (비용 발생)
+    python -m scripts.demo_check --base-url https://<배포 주소>  # 배포된 서버에 직접 요청 (배포 직후·발표 전 점검)
 
 시나리오 형식 (단계마다):
     "changes": {"room": "applied"}   key별 판단 (허용 목록 ["ignored", null], null = 후보 없음)
@@ -50,9 +51,10 @@ def check_step(step: dict, result: dict, facts: dict) -> list[str]:
     return problems
 
 
-def run_scenario(client, scenario: dict) -> list[dict]:
-    """시나리오를 처음부터 끝까지 실행합니다. client는 FastAPI TestClient."""
-    sid = client.post("/api/sessions", json=scenario["session"]).json()["id"]
+def run_scenario(client, scenario: dict, title_prefix: str = "") -> list[dict]:
+    """시나리오를 처음부터 끝까지 실행합니다. client는 FastAPI TestClient 또는 httpx.Client(배포 서버)."""
+    session = {**scenario["session"], "title": title_prefix + scenario["session"]["title"]}
+    sid = client.post("/api/sessions", json=session).json()["id"]
     results = []
     for step in scenario["steps"]:
         start = time.time()
@@ -69,11 +71,73 @@ def run_scenario(client, scenario: dict) -> list[dict]:
     return results
 
 
+def run_all(client, scenarios: list[dict], repeat: int, label: str, title_prefix: str = "") -> bool:
+    """시나리오를 repeat번 실행하고 결과·요약을 출력합니다. 모두 통과하면 True."""
+    fails: dict[str, int] = {}
+    total_steps = 0
+    times: list[tuple[float, str]] = []
+    for n in range(1, repeat + 1):
+        print(f"\n===== {n}회차 ({label})")
+        for sc in scenarios:
+            print(f"[{sc['name']}]")
+            for res in run_scenario(client, sc, title_prefix):
+                total_steps += 1
+                times.append((res["seconds"], res["text"]))
+                if res["problems"]:
+                    fails[res["text"]] = fails.get(res["text"], 0) + 1
+                    print(f"  X {res['text']}")
+                    for p in res["problems"]:
+                        print(f"      {p}")
+                    for c in res["changes"]:
+                        print(f"      - {c['key']}={c['new_value']!r} {c['change_type']} → {c['status']} ({c['reason']})")
+                else:
+                    print(f"  O {res['text']}")
+
+    print("\n--- 요약 ---")
+    print(f"단계 통과: {total_steps - sum(fails.values())}/{total_steps}")
+    if times:
+        slowest = max(times)
+        print(f"분석 응답 시간: 평균 {sum(t for t, _ in times) / len(times):.1f}초, "
+              f"최대 {slowest[0]:.1f}초 ({slowest[1]})")
+    for text, count in fails.items():
+        print(f"  {count}/{repeat}회 실패: {text}")
+    return not fails
+
+
+def check_deployed(base_url: str, scenarios: list[dict], repeat: int) -> int:
+    """배포된 서버에 직접 요청합니다. 서버 깨우기 시간과 AI 설정을 먼저 확인합니다."""
+    import httpx
+
+    with httpx.Client(base_url=base_url.rstrip("/"), timeout=90) as client:
+        # Render 무료 서버는 15분 쉬면 잠들어 첫 요청이 오래 걸립니다
+        start = time.time()
+        try:
+            health = client.get("/api/health").json()
+        except httpx.HTTPError as e:
+            print(f"서버에 연결하지 못했습니다: {e!r}", file=sys.stderr)
+            return 1
+        print(f"서버 응답: {time.time() - start:.1f}초 (잠들어 있었다면 깨우는 시간 포함), AI 설정: {health.get('llm_provider')}")
+        if health.get("llm_provider") != "openai":
+            print("⚠ 배포 서버가 모의 분석기로 설정돼 있습니다. Render 환경변수 LLM_PROVIDER·OPENAI_API_KEY를 확인하세요.")
+
+        # 점검으로 만든 세션은 배포 DB에 남으므로 제목으로 구분합니다
+        ok = run_all(client, scenarios, repeat, base_url, title_prefix="[시연 점검] ")
+
+    print("(AI 호출이 실행 중에 실패해 모의 분석기로 대체된 경우는 밖에서 보이지 않습니다. "
+          "Render 로그에서 'AI 분석 실패 → 모의 분석기로 대체'를 확인하세요.)")
+    return 0 if ok and health.get("llm_provider") == "openai" else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="시연 시나리오 점검")
-    parser.add_argument("--provider", choices=["mock", "openai"], default="mock")
+    parser.add_argument("--provider", choices=["mock", "openai"], default="mock", help="로컬 점검에서 쓸 분석기")
     parser.add_argument("--repeat", type=int, default=1, help="반복 횟수 (실제 AI는 3~5회 권장)")
+    parser.add_argument("--base-url", help="배포 서버 주소 (예: https://changewatch.onrender.com). 주면 로컬 대신 그 서버로 점검")
     args = parser.parse_args()
+
+    scenarios = json.loads(DEMO_PATH.read_text(encoding="utf-8"))
+    if args.base_url:
+        return check_deployed(args.base_url, scenarios, args.repeat)
 
     # 점검용 DB를 따로 써서 개발 DB를 건드리지 않습니다. (app import 전에 설정)
     db_file = Path("demo_check.db")
@@ -103,47 +167,20 @@ def main() -> int:
 
     llm_extractor.OpenAIExtractor.extract = watched
 
-    scenarios = json.loads(DEMO_PATH.read_text(encoding="utf-8"))
-    fails: dict[str, int] = {}
-    total_steps = 0
-    times: list[tuple[float, str]] = []
     try:
         with TestClient(app) as client:
-            for n in range(1, args.repeat + 1):
-                print(f"\n===== {n}회차 ({args.provider})")
-                for sc in scenarios:
-                    print(f"[{sc['name']}]")
-                    for res in run_scenario(client, sc):
-                        total_steps += 1
-                        times.append((res["seconds"], res["text"]))
-                        if res["problems"]:
-                            fails[res["text"]] = fails.get(res["text"], 0) + 1
-                            print(f"  X {res['text']}")
-                            for p in res["problems"]:
-                                print(f"      {p}")
-                            for c in res["changes"]:
-                                print(f"      - {c['key']}={c['new_value']!r} {c['change_type']} → {c['status']} ({c['reason']})")
-                        else:
-                            print(f"  O {res['text']}")
+            ok = run_all(client, scenarios, args.repeat, args.provider)
     finally:
         from app.db import engine
 
         engine.dispose()  # Windows는 연결이 열려 있으면 파일을 지울 수 없습니다
         db_file.unlink(missing_ok=True)
 
-    print("\n--- 요약 ---")
-    print(f"단계 통과: {total_steps - sum(fails.values())}/{total_steps}")
-    if times:
-        slowest = max(times)
-        print(f"분석 응답 시간: 평균 {sum(t for t, _ in times) / len(times):.1f}초, "
-              f"최대 {slowest[0]:.1f}초 ({slowest[1]})")
-    for text, count in fails.items():
-        print(f"  {count}/{args.repeat}회 실패: {text}")
     if fallbacks:
         print(f"AI 호출 실패로 모의 분석기 대체: {len(fallbacks)}회")
         for f in fallbacks[:5]:
             print(f"  {f}")
-    return 1 if fails or fallbacks else 0
+    return 0 if ok and not fallbacks else 1
 
 
 if __name__ == "__main__":
