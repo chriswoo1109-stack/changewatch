@@ -51,8 +51,11 @@ def check_step(step: dict, result: dict, facts: dict) -> list[str]:
     return problems
 
 
-def run_scenario(client, scenario: dict, title_prefix: str = "") -> list[dict]:
-    """시나리오를 처음부터 끝까지 실행합니다. client는 FastAPI TestClient 또는 httpx.Client(배포 서버)."""
+def run_scenario(client, scenario: dict, title_prefix: str = "", pause: float = 0.0) -> list[dict]:
+    """시나리오를 처음부터 끝까지 실행합니다. client는 FastAPI TestClient 또는 httpx.Client(배포 서버).
+
+    pause: 분석 요청 사이 쉬는 초. 배포 서버의 요금 보호(같은 접속 1분 N회)에 걸리지 않게 합니다.
+    """
     session = {**scenario["session"], "title": title_prefix + scenario["session"]["title"]}
     sid = client.post("/api/sessions", json=session).json()["id"]
     results = []
@@ -60,6 +63,12 @@ def run_scenario(client, scenario: dict, title_prefix: str = "") -> list[dict]:
         start = time.time()
         r = client.post(f"/api/sessions/{sid}/announcements", json={"text": step["text"]})
         seconds = time.time() - start
+        if pause:
+            time.sleep(pause)
+        if r.status_code == 429:
+            results.append({"text": step["text"], "changes": [], "seconds": seconds,
+                            "problems": ["요금 보호 제한(같은 접속 1분 호출 수)에 걸림 → --per-minute를 낮춰 다시 실행"]})
+            continue
         if r.status_code != 200:
             results.append({"text": step["text"], "problems": [f"HTTP {r.status_code}: {r.text}"], "changes": [],
                             "seconds": seconds})
@@ -71,7 +80,7 @@ def run_scenario(client, scenario: dict, title_prefix: str = "") -> list[dict]:
     return results
 
 
-def run_all(client, scenarios: list[dict], repeat: int, label: str, title_prefix: str = "") -> bool:
+def run_all(client, scenarios: list[dict], repeat: int, label: str, title_prefix: str = "", pause: float = 0.0) -> bool:
     """시나리오를 repeat번 실행하고 결과·요약을 출력합니다. 모두 통과하면 True."""
     fails: dict[str, int] = {}
     total_steps = 0
@@ -80,7 +89,7 @@ def run_all(client, scenarios: list[dict], repeat: int, label: str, title_prefix
         print(f"\n===== {n}회차 ({label})")
         for sc in scenarios:
             print(f"[{sc['name']}]")
-            for res in run_scenario(client, sc, title_prefix):
+            for res in run_scenario(client, sc, title_prefix, pause):
                 total_steps += 1
                 times.append((res["seconds"], res["text"]))
                 if res["problems"]:
@@ -104,7 +113,7 @@ def run_all(client, scenarios: list[dict], repeat: int, label: str, title_prefix
     return not fails
 
 
-def check_deployed(base_url: str, scenarios: list[dict], repeat: int) -> int:
+def check_deployed(base_url: str, scenarios: list[dict], repeat: int, per_minute: int) -> int:
     """배포된 서버에 직접 요청합니다. 서버 깨우기 시간과 AI 설정을 먼저 확인합니다."""
     import httpx
 
@@ -120,8 +129,11 @@ def check_deployed(base_url: str, scenarios: list[dict], repeat: int) -> int:
         if health.get("llm_provider") != "openai":
             print("⚠ 배포 서버가 모의 분석기로 설정돼 있습니다. Render 환경변수 LLM_PROVIDER·OPENAI_API_KEY를 확인하세요.")
 
-        # 점검으로 만든 세션은 배포 DB에 남으므로 제목으로 구분합니다
-        ok = run_all(client, scenarios, repeat, base_url, title_prefix="[시연 점검] ")
+        # 점검으로 만든 세션은 배포 DB에 남으므로 제목으로 구분합니다.
+        # 서버의 요금 보호(기본 1분 20회)를 넘지 않게 분석 요청 사이에 쉽니다. 하루 AI 한도도 그만큼 씁니다.
+        steps = sum(len(sc["steps"]) for sc in scenarios) * repeat
+        print(f"분석 요청 {steps}번을 1분에 {per_minute}번 이하로 보냅니다 (약 {steps * 60 / per_minute / 60:.1f}분)")
+        ok = run_all(client, scenarios, repeat, base_url, title_prefix="[시연 점검] ", pause=60 / per_minute)
 
     print("(AI 호출이 실행 중에 실패해 모의 분석기로 대체된 경우는 밖에서 보이지 않습니다. "
           "Render 로그에서 'AI 분석 실패 → 모의 분석기로 대체'를 확인하세요.)")
@@ -133,16 +145,22 @@ def main() -> int:
     parser.add_argument("--provider", choices=["mock", "openai"], default="mock", help="로컬 점검에서 쓸 분석기")
     parser.add_argument("--repeat", type=int, default=1, help="반복 횟수 (실제 AI는 3~5회 권장)")
     parser.add_argument("--base-url", help="배포 서버 주소 (예: https://changewatch.onrender.com). 주면 로컬 대신 그 서버로 점검")
+    parser.add_argument("--per-minute", type=int, default=18,
+                        help="배포 서버 점검 때 1분에 보낼 분석 요청 수 (서버 RATE_LIMIT_PER_MINUTE보다 작게, 기본 18)")
     args = parser.parse_args()
 
     scenarios = json.loads(DEMO_PATH.read_text(encoding="utf-8"))
     if args.base_url:
-        return check_deployed(args.base_url, scenarios, args.repeat)
+        return check_deployed(args.base_url, scenarios, args.repeat, args.per_minute)
 
     # 점검용 DB를 따로 써서 개발 DB를 건드리지 않습니다. (app import 전에 설정)
     db_file = Path("demo_check.db")
     os.environ["DATABASE_URL"] = f"sqlite:///./{db_file}"
     os.environ["LLM_PROVIDER"] = args.provider
+    # 이 점검용 앱 안에서만 요금 보호를 풉니다 (tests/conftest.py와 같음). 같은 접속에서 빠르게 여러 번 부르고,
+    # 하루 한도에 닿으면 표시 없이 모의 분석기로 넘어가 점검 결과가 틀어지기 때문입니다.
+    os.environ["RATE_LIMIT_PER_MINUTE"] = "100000"
+    os.environ["AI_DAILY_LIMIT"] = "100000"
 
     from fastapi.testclient import TestClient
 

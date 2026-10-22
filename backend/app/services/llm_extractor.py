@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from app.core.config import settings
 from app.domains import load_domain
 from app.schemas.analysis import Candidate, ExtractionResult, TodoCandidate
+from app.services import cost_guard
 from app.services.normalize import normalize_value
 from app.services.verifier import CHANGE_WORDS, DIRECTIVE_RE, UNCERTAIN_WORDS
 
@@ -184,6 +185,9 @@ def extract_safely(
     결과는 어느 쪽이든 verifier를 거치므로, 시연 중 에러로 멈추는 것보다 안전합니다.
     """
     extractor = get_extractor()
+    if isinstance(extractor, OpenAIExtractor) and not cost_guard.use_ai_budget():
+        logger.warning("오늘 AI 호출 한도 도달 → 모의 분석기로 대체")
+        return MockExtractor().extract(text, domain, facts)
     try:
         return extractor.extract(text, domain, facts, my_number, my_name)
     except Exception:
