@@ -46,6 +46,7 @@ npm run dev
 시연 전에 실제 AI로 위 순서가 매번 맞는지 점검합니다 (backend 폴더, `.env`에 OpenAI 키 필요):
 ```bash
 python -m scripts.demo_check --provider openai --repeat 5
+python -m scripts.demo_check --base-url https://<배포 주소>   # 배포된 서버로 점검 (발표 직전, 서버 깨우기 겸)
 ```
 시연 문장을 바꾸면 `backend/tests/fixtures/demo.json`도 함께 고쳐 주세요.
 

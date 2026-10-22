@@ -53,6 +53,12 @@ https://changewatch-.*\.vercel\.app
 - [ ] `/session` 화면에서 새로고침해도 404가 안 남 (`frontend/vercel.json`)
 - [ ] 휴대폰에서 접속 → **녹음** → 결과 (https라 마이크 동작)
 - [ ] 브라우저 개발자 도구 Console에 CORS 에러 없음
+- [ ] **시연 문장 점검**: 내 컴퓨터의 `backend` 폴더에서 배포 서버로 시연 시나리오를 보내 봅니다
+  ```bash
+  python -m scripts.demo_check --base-url https://<Render 주소> --repeat 2
+  ```
+  `AI 설정: openai`, `단계 통과: 20/20`이 나오면 정상입니다. 첫 줄의 "서버 응답" 시간이 잠든 서버를 깨우는 시간입니다.
+  (점검용 세션은 배포 DB에 `[시연 점검]` 제목으로 남습니다)
 
 ## 자주 나는 문제
 | 증상 | 원인·해결 |
@@ -63,3 +69,5 @@ https://changewatch-.*\.vercel\.app
 | Render 빌드 실패 | Render → Logs 확인. Python 버전은 `render.yaml`의 `PYTHON_VERSION` |
 | DB 구조를 바꿨는데 에러 | Neon 대시보드 → SQL Editor에서 테이블 삭제 후 재배포 (데이터 사라짐, 시연 전에만) |
 | 음성 인식 501 | Render에 `OPENAI_API_KEY`가 없음 |
+| 점검에서 `AI 설정: mock` 경고 | Render 환경변수 `LLM_PROVIDER=openai`, `OPENAI_API_KEY` 확인 후 재배포 |
+| 결과가 이상한데 AI 설정은 openai | 실행 중 AI 호출이 실패하면 모의 분석기로 대체됩니다. Render → Logs에서 "AI 분석 실패 → 모의 분석기로 대체" 확인 |
