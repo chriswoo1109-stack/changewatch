@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 
 from app.domains import item_labels
-from app.schemas.analysis import Candidate
+from app.schemas.analysis import Candidate, TodoCandidate
 from app.services.llm_extractor import MockExtractor
-from app.services.verifier import verify
+from app.services.verifier import verify, verify_todos
 
 CASES = json.loads((Path(__file__).parent / "fixtures" / "sentences.json").read_text(encoding="utf-8"))
 KEYS = set(item_labels("hospital"))
@@ -219,3 +219,22 @@ def test_cancel_with_same_value_still_applies():
     c = Candidate(key="exam_time", value="오후 2시", change_type="cancel", evidence=text, confidence=0.9)
     [d] = verify([c], {"exam_time": "오후 2시"}, text, KEYS, domain="hospital")
     assert d.status == "applied"
+
+
+@pytest.mark.parametrize("text, my_number, kept", [
+    ("12번 환자분 7번 진료실로 오세요.", "37", False),  # 다른 사람 호출 → 남의 할 일
+    ("12번 환자분 7번 진료실로 오세요.", None, False),  # 누구인지 모름 → 할 일은 확인 요청이 없어 버림
+    ("37번 환자분 7번 진료실로 오세요.", "37", True),   # 내 호출
+    ("처방전은 약국에 제출하세요.", "37", True),         # 대상 표현 없음
+    ("처음 오신 분은 접수처로 가세요.", None, True),     # 특정인이 아닌 묶음 안내
+])
+def test_todo_for_someone_else_is_dropped(text, my_number, kept):
+    todo = TodoCandidate(text="할 일", evidence=text)
+    result = verify_todos([todo], text, set(), domain="hospital", facts={}, my_number=my_number)
+    assert bool(result) is kept
+
+
+def test_todo_check_uses_full_sentence_when_evidence_is_cut():
+    text = "대기번호 12번 환자분 7번 진료실로 오세요."
+    todo = TodoCandidate(text="7번 진료실로 가기", evidence="7번 진료실로 오세요")
+    assert verify_todos([todo], text, set(), domain="hospital", facts={}, my_number="37") == []

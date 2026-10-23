@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from app.core.config import settings
 from app.domains import am_hours, load_domain, time_keys
 from app.schemas.analysis import Candidate, TodoCandidate
-from app.services.audience import find_audience_detail
+from app.services.audience import GENERIC_GROUP_RE, find_audience_detail
 from app.services.normalize import fill_meridiem, normalize_value
 
 
@@ -196,8 +196,28 @@ def verify(
     return decisions
 
 
-def verify_todos(todos: list[TodoCandidate], original_text: str, existing: set[str]) -> list[TodoCandidate]:
-    """할 일 후보 중 원문 근거가 있고, 이미 있는 할 일과 겹치지 않는 것만 남깁니다."""
+def verify_todos(
+    todos: list[TodoCandidate],
+    original_text: str,
+    existing: set[str],
+    domain: str | None = None,
+    facts: dict[str, str] | None = None,
+    my_number: str | None = None,
+    my_name: str | None = None,
+) -> list[TodoCandidate]:
+    """할 일 후보 중 원문 근거가 있고, 이미 있는 할 일과 겹치지 않고, 나에게 한 안내인 것만 남깁니다.
+
+    "12번 환자분 7번 진료실로 오세요"에서 진료실은 3-1 규칙으로 걸러도, AI가 "7번 진료실로 가기"를
+    할 일로 뽑으면 남의 할 일이 쌓인다. 할 일은 확인 요청이 없으므로 다른 사람·누군지 모르는 호출이면 버린다.
+    ("처음 오신 분은 …"처럼 특정인을 부르지 않는 묶음 안내는 남긴다)
+    """
+    items = {i["key"]: i for i in load_domain(domain)["items"]} if domain else {}
+    times = time_keys(domain) if domain else set()
+    current = facts or {}
+    my_times = [v for k, v in current.items() if k in times and v]
+    groups = {i["label"]: current.get(k) for k, i in items.items() if i.get("group_call")}
+    hours = am_hours(domain) if domain else (7, 11)
+
     kept: list[TodoCandidate] = []
     seen = set(existing)
     for t in todos:
@@ -205,6 +225,10 @@ def verify_todos(todos: list[TodoCandidate], original_text: str, existing: set[s
         if not text or text in seen:
             continue
         if t.evidence.strip() not in original_text:
+            continue
+        sentence = normalize_value(sentence_around(original_text, t.evidence))
+        found = find_audience_detail(sentence, my_number, my_name, my_times, hours, groups)
+        if found and (found[0] == "other" or (found[0] == "unknown" and not GENERIC_GROUP_RE.search(found[1]))):
             continue
         seen.add(text)
         kept.append(TodoCandidate(text=text, evidence=t.evidence.strip()))

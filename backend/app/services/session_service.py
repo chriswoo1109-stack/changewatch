@@ -111,7 +111,10 @@ def analyze(db: DB, session: VisitSession, text: str) -> AnalyzeResponse:
     existing_todos = set(db.scalars(select(Todo.text).where(Todo.session_id == session.id)).all())
     todos = [
         Todo(session_id=session.id, announcement_id=announcement.id, text=t.text, evidence=t.evidence)
-        for t in verify_todos(extraction.todos, text, existing_todos)
+        for t in verify_todos(
+            extraction.todos, text, existing_todos, domain=session.domain,
+            facts=current_facts(db, session.id), my_number=session.my_number, my_name=session.my_name,
+        )
     ]
     db.add_all(todos)
     db.commit()
