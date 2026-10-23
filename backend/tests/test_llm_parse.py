@@ -80,3 +80,6 @@ def test_openai_extractor_builds_prompt_and_parses(monkeypatch):
     assert [c.value for c in result.candidates] == ["5번"]
     assert "번호: 37, 이름: 홍길동" in sent["prompt"]
     assert "supplies: 준비물 — " in sent["prompt"]  # 항목 설명이 프롬프트에 들어감
+    # 저장된 정보는 모든 추적 항목을 (없음)과 함께 보여 준다 (진료실만 보이면 AI가 다른 새 항목을 놓침)
+    assert "- room(진료실): 3번" in sent["prompt"]
+    assert "- exam_time(검사 시간): (없음)" in sent["prompt"]
