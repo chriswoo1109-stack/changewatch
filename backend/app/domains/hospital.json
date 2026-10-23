@@ -5,7 +5,7 @@
   "items": [
     {"key": "room", "label": "진료실", "description": "이 사용자가 가야 할 진료실 번호 (다른 환자를 부르는 번호는 아님)", "value_pattern": "[0-9]", "not_followed_by": ["환자"], "group_call": true, "unit": "번", "keywords": ["진료실"]},
     {"key": "wait_number", "label": "대기 순번", "description": "이 사용자의 대기 순번·대기 번호", "value_pattern": "[0-9]", "unit": "번", "keywords": ["순번", "대기번호", "대기 번호"]},
-    {"key": "exam_time", "label": "검사 시간", "description": "검사 시각", "type": "time", "value_pattern": "[0-9]", "keywords": ["검사"]},
+    {"key": "exam_time", "label": "검사 시간", "description": "검사 시각. 혈액 검사·CT·MRI·초음파·엑스레이·내시경처럼 검사 이름과 함께 나오는 시각도 여기에 넣는다", "type": "time", "value_pattern": "[0-9]", "keywords": ["검사", "채혈", "CT", "MRI", "초음파", "엑스레이", "내시경", "촬영"]},
     {"key": "visit_time", "label": "진료 시간", "description": "진료·예약 시각", "type": "time", "value_pattern": "[0-9]", "keywords": ["진료 시간", "진료시간", "예약 시간"]},
     {"key": "medication", "label": "복용 방법", "description": "약 먹는 방법 (횟수·시점·용량). 가져올 약 목록은 supplies", "keywords": ["복용", "드세요", "약은"]},
     {"key": "supplies", "label": "준비물", "description": "방문할 때 가져오거나 챙겨야 할 물건·서류 (예: 신분증, 의뢰서, 약 목록, 검사 결과지)", "keywords": ["준비물", "챙겨", "가져오세요"]},
