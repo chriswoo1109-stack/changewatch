@@ -272,7 +272,8 @@ function Shell({ title, recording, busy, error, onStart, onStop, onFallback, wak
     startListening();
   };
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col items-center gap-4 bg-slate-900 p-5 text-white">
+    // 하단 탭 없이 화면 전체 높이. 아이폰 홈 막대 영역(safe-area)만큼 아래 여백
+    <div className="flex h-dvh flex-col items-center gap-4 bg-slate-900 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-white">
       <div className="flex w-full items-center justify-between">
         <button onClick={() => navigate("/")} aria-label="닫기" disabled={busy}>
           <Icon name="close" className="h-7 w-7" />

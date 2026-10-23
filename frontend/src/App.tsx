@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { wakeServer } from "./api/client";
 import BottomNav from "./components/common/BottomNav";
 import ServerWaitBanner from "./components/common/ServerWaitBanner";
@@ -18,10 +18,14 @@ export default function App() {
     wakeServer();
   }, []);
 
+  // 녹음 화면은 듣기에만 집중하는 전체 화면: 하단 탭을 숨겨 화면 아래 색이 끊기지 않게 하고,
+  // 듣는 중에 탭을 잘못 눌러 듣기가 멈추는 것도 막습니다. (나가기는 화면의 × 버튼)
+  const fullScreen = useLocation().pathname === "/record";
+
   return (
     // 휴대폰 화면 폭으로 고정해 앱처럼 보이게 합니다.
     <div className="mx-auto flex min-h-full max-w-md flex-col bg-slate-50 shadow-sm">
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className={`flex-1 overflow-y-auto ${fullScreen ? "" : "pb-20"}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/record" element={<RecordingPage />} />
@@ -36,7 +40,7 @@ export default function App() {
         </Routes>
       </main>
       <ServerWaitBanner />
-      <BottomNav />
+      {!fullScreen && <BottomNav />}
     </div>
   );
 }
