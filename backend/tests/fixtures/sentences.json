@@ -21,7 +21,7 @@
 
   {"name": "정정 - 아까 말씀드린", "tags": ["correction"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "아까 3번이라고 말씀드렸는데 5번 진료실입니다.", "expect": {"room": ["applied", "5번"]}},
   {"name": "정정 - 잘못 안내 (두 문장)", "tags": ["correction"], "mock_xfail": true, "facts": {"wait_number": "12번"}, "text": "대기 번호를 잘못 안내드렸습니다. 15번입니다.", "expect": {"wait_number": ["applied", "15번"]}},
-  {"name": "정정 - 값 없음", "tags": ["correction"], "facts": {"exam_time": "오후 2시"}, "text": "검사 시간 정정 안내 드립니다.", "expect": {"exam_time": [["pending", null], "오후 2시"]}},
+  {"name": "정정 - 값 없음", "tags": ["correction"], "facts": {"exam_time": "오후 2시"}, "text": "검사 시간 정정 안내 드립니다.", "expect": {"exam_time": [["pending", "ignored", null], "오후 2시"]}},
 
   {"name": "언급 - 다른 진료실 소개", "tags": ["mention"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "옆 7번 진료실은 소아과입니다.", "expect": {"room": [["ignored", null], "3번"]}},
   {"name": "언급 - 다른 환자 예약 시간", "tags": ["mention"], "facts": {"visit_time": "오전 10시"}, "text": "오전 11시 예약 환자분들은 접수처로 와 주세요.", "expect": {"visit_time": [["ignored", null], "오전 10시"]}},
@@ -83,6 +83,14 @@
   {"name": "검사 이름 - 초음파 (검사라는 말 없음)", "tags": ["exam", "change"], "facts": {"exam_time": "오후 2시"}, "text": "초음파는 오후 4시로 바뀌었습니다.", "expect": {"exam_time": ["applied", "오후 4시"]}},
   {"name": "검사 이름 - 엑스레이 촬영", "tags": ["exam", "new"], "facts": {}, "text": "엑스레이 촬영은 2시 30분에 합니다.", "expect": {"exam_time": ["applied", "오후 2시 30분"]}},
   {"name": "검사 이름 - 시각 없는 검사 언급", "tags": ["exam", "mention"], "facts": {"room": "3번"}, "text": "혈액 검사 끝나시면 3번 진료실로 오세요.", "expect": {"room": [["ignored", null], "3번"], "exam_time": [["ignored", "pending", null], null]}},
+
+  {"name": "기존 정보 있음 - 진료실 뒤 검사 시간", "tags": ["existing", "new"], "facts": {"room": "3번"}, "text": "검사는 오후 3시입니다.", "expect": {"exam_time": ["applied", "오후 3시"]}},
+  {"name": "기존 정보 있음 - 진료실 뒤 복용 방법", "tags": ["existing", "new", "medication"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "약은 하루 세 번 식후에 드세요.", "expect": {"medication": ["applied", ["하루 3회 식후", "하루 3번 식후"]]}},
+  {"name": "기존 정보 있음 - 진료실 뒤 다음 진료", "tags": ["existing", "new"], "facts": {"room": "3번"}, "text": "다음 진료는 2주 뒤입니다.", "expect": {"next_visit": ["applied", ["2주 뒤", "2주 후"]]}},
+  {"name": "기존 정보 있음 - 진료실 뒤 혈액 검사", "tags": ["existing", "new", "exam"], "facts": {"room": "3번"}, "text": "혈액 검사는 오후 3시 반에 있습니다.", "expect": {"exam_time": ["applied", "오후 3시 30분"]}},
+  {"name": "기존 정보 있음 - 검사 뒤 대기 번호", "tags": ["existing", "new"], "facts": {"exam_time": "오후 2시"}, "text": "대기 번호 12번으로 접수되었습니다.", "expect": {"wait_number": ["applied", "12번"], "exam_time": [["ignored", null], "오후 2시"]}},
+  {"name": "기존 정보 있음 - 진료실 뒤 준비물", "tags": ["existing", "new", "supplies"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "준비물은 신분증과 보험증입니다.", "expect": {"supplies": ["applied", ["신분증과 보험증", "신분증, 보험증", "신분증 및 보험증"]], "room": [["ignored", null], "3번"]}},
+  {"name": "기존 정보 있음 - 여러 개 저장 뒤 진료실만 변경", "tags": ["existing", "change"], "facts": {"room": "3번", "exam_time": "오후 2시", "medication": "하루 3회 식후"}, "text": "진료실이 5번으로 변경되었습니다.", "expect": {"room": ["applied", "5번"]}},
 
   {"name": "여러 항목 - 한 문장", "tags": ["multi", "new"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번이고, 검사는 오후 3시입니다.", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "여러 항목 - 유지와 변경", "tags": ["multi", "change"], "mock_xfail": true, "facts": {"room": "3번", "exam_time": "오후 2시"}, "text": "진료실은 그대로 3번이고, 검사만 오후 4시로 변경되었습니다.", "expect": {"room": [["ignored", null], "3번"], "exam_time": ["applied", "오후 4시"]}},

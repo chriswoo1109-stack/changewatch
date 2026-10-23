@@ -20,5 +20,14 @@
       {"text": "십이 번 환자분 5번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false},
       {"text": "137번 환자분 2번 진료실로 오세요.", "changes": {"room": ["ignored", null]}, "facts": {"room": "7번"}, "my_turn": false}
     ]
+  },
+  {
+    "name": "진료실 안내 뒤 검사·예약 안내",
+    "session": {"title": "진료 후 안내", "domain": "hospital"},
+    "steps": [
+      {"text": "진료실은 3번입니다.", "changes": {"room": "applied"}, "facts": {"room": "3번"}},
+      {"text": "검사는 오후 3시입니다.", "changes": {"exam_time": "applied"}, "facts": {"room": "3번", "exam_time": "오후 3시"}},
+      {"text": "다음 진료는 2주 뒤입니다.", "changes": {"next_visit": "applied"}, "facts": {"room": "3번", "exam_time": "오후 3시", "next_visit": "2주 뒤"}}
+    ]
   }
 ]

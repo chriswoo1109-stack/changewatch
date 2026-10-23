@@ -106,7 +106,9 @@ class OpenAIExtractor:
                 f"- {i['key']}: {i['label']}" + (f" — {i['description']}" if i.get("description") else "")
                 for i in spec["items"]
             ),
-            facts=json.dumps(facts, ensure_ascii=False) if facts else "(없음)",
+            # 저장된 항목만 JSON으로 보여 주면 AI가 그 항목만 다루는 줄 알고 다른 새 항목을 놓칩니다.
+            # (진료실만 저장된 뒤 "검사는 오후 3시입니다" → 후보 0/12) 그래서 모든 추적 항목을 (없음)과 함께 보여 줍니다.
+            facts="\n".join(f"- {i['key']}({i['label']}): {facts.get(i['key']) or '(없음)'}" for i in spec["items"]),
             me=f"번호: {my_number or '모름'}, 이름: {my_name or '모름'}",
             text=text,
         )
