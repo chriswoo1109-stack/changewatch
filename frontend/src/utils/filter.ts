@@ -153,12 +153,18 @@ export function hasMyKeyword(sentence: string, my: MyKeywords) {
   return false;
 }
 
+// 음성 인식이 숫자를 한글로 적은 값: "오후 세 시 반", "네 시로", "삼십 분", "칠 번"
+// 숫자(0~9)만 보면 이런 안내가 소음으로 빠져 분석되지 않습니다. 단위가 바로 붙은 경우만 봅니다
+// ("이번 주", "세 시간", "한시름", "한시적"은 제외).
+const KOREAN_NUMBER_VALUE =
+  /(?<![가-힣])(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|열한|열두)\s?시(?!간|름|적|작|설|장|청)|(?<![가-힣])[일이삼사오육칠팔구십]+\s(?:시|분|번|층)/;
+
 export function classifySentence(sentence: string, my: MyKeywords): SentenceKind {
   if (hasMyKeyword(sentence, my)) return "mine";
   // 인사말을 뗀 나머지로 판단 ("안녕하세요"만 있으면 남는 게 없어 소음)
   const core = stripGreeting(sentence);
   if (!core) return "noise";
-  if (/\d/.test(core) || NO_VALUE_WORDS.some((w) => core.includes(w))) return "notice";
+  if (/\d/.test(core) || KOREAN_NUMBER_VALUE.test(core) || NO_VALUE_WORDS.some((w) => core.includes(w))) return "notice";
   if (TEXT_ITEM_WORDS.some((w) => core.includes(w))) return "notice";
   if (TODO_ENDING.test(core) && !NUMBER_ITEM_WORDS.some((w) => core.includes(w))) return "notice";
   return "noise";
