@@ -169,6 +169,38 @@ export function isCompleteSentence(sentence: string) {
   return /(다|요|죠|까)[.!?]?$/.test(sentence.trim());
 }
 
+const squash = (s: string) => s.replace(/[\s.,!?]/g, "");
+
+/**
+ * 직전 자막 줄(prev)과 새로 확정된 조각(next)을 겹치지 않게 합칩니다. 새 줄로 시작해야 하면 null.
+ * 안드로이드 Chrome은 "진료실이" → "진료실이 5번으로"처럼 앞부분을 포함해 다시 보내는 일이 잦아서,
+ * 그냥 이어 붙이면 "진료실이 진료실이 5번으로"가 됩니다.
+ */
+export function mergeFragment(prev: string, next: string): string | null {
+  const p = squash(prev);
+  const n = squash(next);
+  if (!n) return prev;
+  if (n.startsWith(p)) return next; // 누적해서 다시 보냄 → 새 조각으로 바꿈
+  if (p === n) return prev; // 같은 문장을 한 번 더 보냄
+  if (isCompleteSentence(prev)) return null; // 앞 문장이 끝났으면 새 줄
+
+  if (p.endsWith(n)) return prev; // 이미 들어 있는 뒷부분
+  // "진료실이 5번" + "5번으로 변경되었습니다"처럼 끝과 앞이 겹치면 겹친 단어는 한 번만
+  const pw = prev.trim().split(/\s+/);
+  const nw = next.trim().split(/\s+/);
+  for (let k = Math.min(pw.length, nw.length); k > 0; k--) {
+    if (squash(pw.slice(-k).join("")) === squash(nw.slice(0, k).join(""))) {
+      return [...pw, ...nw.slice(k)].join(" ");
+    }
+  }
+  // "…5번" + "5번으로 …"처럼 마지막 단어가 다음 첫 단어의 앞부분이면 다음 단어로 바꿈
+  const tail = squash(pw[pw.length - 1]);
+  if (tail.length >= 2 && squash(nw[0]).startsWith(tail)) {
+    return [...pw.slice(0, -1), ...nw].join(" ");
+  }
+  return `${prev.trim()} ${next.trim()}`; // 말을 중간에 끊어 넘겨준 경우
+}
+
 /** 텍스트에서 안내 문장만 남깁니다. 결과가 비면 분석할 안내가 없는 것입니다. */
 export function filterAnnouncement(text: string, my: MyKeywords) {
   const sentences = splitSentences(text).map((s) => ({ text: s, kind: classifySentence(s, my) }));

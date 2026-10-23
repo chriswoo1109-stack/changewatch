@@ -12,7 +12,7 @@ import { useAwayNotice, useWakeLock } from "../hooks/useListenGuard";
 import { useRecorder } from "../hooks/useRecorder";
 import { speechSupported, useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSessionStore } from "../stores/sessionStore";
-import { classifySentence, filterAnnouncement, isCompleteSentence, pickAlternative, stripGreeting, type SentenceKind } from "../utils/filter";
+import { classifySentence, filterAnnouncement, mergeFragment, pickAlternative, stripGreeting, type SentenceKind } from "../utils/filter";
 import { speak, unlockSpeech } from "../utils/speak";
 
 interface Line {
@@ -61,10 +61,11 @@ function LiveCaption({ onFallback }: { onFallback: () => void }) {
   const { listening, ready, interim, error: micError, start, stop } = useSpeechRecognition((alternatives) => {
     let text = pickAlternative(alternatives, myKeywords);
     let prev = linesRef.current;
-    // 브라우저가 말을 중간에 끊어 넘겨주면("진료실이" / "5번으로 변경되었습니다") 앞 조각과 이어 붙입니다.
+    // 브라우저가 말을 끊어 넘겨주거나(PC) 앞부분을 포함해 다시 보내면(안드로이드) 직전 줄과 겹치지 않게 합칩니다.
     const last = prev[prev.length - 1];
-    if (last && !isCompleteSentence(last.text)) {
-      text = `${last.text} ${text}`;
+    const merged = last ? mergeFragment(last.text, text) : null;
+    if (merged !== null) {
+      text = merged;
       prev = prev.slice(0, -1);
     }
     const line = { text, kind: classifySentence(text, myKeywords) };
