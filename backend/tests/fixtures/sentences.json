@@ -35,6 +35,7 @@
   {"name": "취소 - 기존 정보 없음", "tags": ["cancel"], "facts": {}, "text": "오늘 예정된 검사는 취소되었습니다.", "expect": {"exam_time": [["ignored", null], null]}},
   {"name": "취소 - 다음 예약", "tags": ["cancel"], "mock_xfail": true, "facts": {"next_visit": "10월 25일"}, "text": "다음 예약은 취소되었습니다. 필요하시면 다시 잡아 주세요.", "expect": {"next_visit": ["applied", null]}},
   {"name": "취소 후 새 일정", "tags": ["cancel", "multi"], "mock_xfail": true, "facts": {"exam_time": "오후 2시"}, "text": "오후 2시 검사는 취소되었습니다. 대신 내일 오전 9시에 검사가 있습니다.", "expect": {"exam_time": ["applied", ["오전 9시", "내일 오전 9시"]]}},
+  {"name": "취소 후 새 일정 - 한 문장", "tags": ["cancel", "multi"], "facts": {"exam_time": "오후 2시"}, "text": "오늘 검사는 취소됐고 내일 오전 9시에 다시 하겠습니다.", "expect": {"exam_time": ["applied", ["오전 9시", "내일 오전 9시"]]}},
 
   {"name": "같은 값 - 한글 숫자", "tags": ["same", "normalize"], "facts": {"exam_time": "오후 3시"}, "text": "검사는 오후 세 시입니다.", "expect": {"exam_time": [["ignored", null], "오후 3시"]}},
 

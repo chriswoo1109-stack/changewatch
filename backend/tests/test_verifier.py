@@ -238,3 +238,18 @@ def test_todo_check_uses_full_sentence_when_evidence_is_cut():
     text = "대기번호 12번 환자분 7번 진료실로 오세요."
     todo = TodoCandidate(text="7번 진료실로 가기", evidence="7번 진료실로 오세요")
     assert verify_todos([todo], text, set(), domain="hospital", facts={}, my_number="37") == []
+
+
+@pytest.mark.parametrize("value, old, expected_status, expected_after", [
+    ("오전 9시", "오후 2시", "applied", "오전 9시"),  # 실제 AI: "취소됐고 내일 오전 9시에 다시" → cancel + 새 값
+    ("취소됨", "오후 2시", "applied", None),          # 형식에 안 맞는 값 → 평소대로 취소
+    ("오후 2시", "오후 2시", "applied", None),        # 기존 값과 같음 → 그 일정이 취소된 것
+    (None, "오후 2시", "applied", None),              # 값 없는 취소
+])
+def test_cancel_with_new_schedule_becomes_change(value, old, expected_status, expected_after):
+    text = "오늘 검사는 취소됐고 내일 오전 9시에 다시 하겠습니다."
+    c = Candidate(key="exam_time", value=value, change_type="cancel", evidence=text, confidence=0.9)
+    [d] = verify([c], {"exam_time": old}, text, KEYS, domain="hospital")
+    assert d.status == expected_status
+    after = d.candidate.value if d.candidate.change_type != "cancel" else None
+    assert after == expected_after

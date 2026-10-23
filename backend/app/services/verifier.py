@@ -117,6 +117,12 @@ def verify(
         groups = {i["label"]: current.get(k) for k, i in items.items() if i.get("group_call")}
         return find_audience_detail(sentence, my_number, my_name, my_times, hours, groups)
 
+    def is_new_schedule(key: str, value: str | None, old: str | None) -> bool:
+        # 형식이 정해진 항목(시각·번호)만 판단한다. 복용 방법처럼 형식이 없는 항목은 평소대로 취소
+        pattern = items.get(key, {}).get("value_pattern")
+        return bool(value and pattern and re.search(pattern, value) and not looks_like_sentence(value)
+                    and norm(key, old) != value)
+
     def item_names(key: str) -> list[str]:
         item = items.get(key, {})
         return [n for n in [item.get("label"), *item.get("keywords", [])] if n]
@@ -133,6 +139,13 @@ def verify(
         old = current.get(c.key)
         # AI가 근거를 "3번 진료실로 오세요."처럼 잘라 줘도 "12번 환자분"을 볼 수 있게 원문 문장 전체로 판단
         sentence = sentence_around(original_text, c.evidence)
+        # 0-1. "오늘 검사는 취소됐고 내일 오전 9시에 다시 하겠습니다"처럼 취소와 새 일정이 한 문장에 있으면
+        #      AI가 cancel로 분류하면서 값에 새 일정("오전 9시")을 넣는다. 그대로 취소하면 일정이 사라지므로,
+        #      값이 항목 형식(value_pattern)에 맞고 기존 값과 다르면 새 일정으로의 변경으로 본다.
+        #      ("취소됨"처럼 형식에 안 맞거나 기존 값과 같은 값이면 평소대로 취소)
+        rescheduled = c.change_type == "cancel" and is_new_schedule(c.key, c.value, old)
+        if rescheduled:
+            c = c.model_copy(update={"change_type": "change"})
 
         def decide(status: str, reason: str) -> None:
             decisions.append(Decision(c, status, reason, old))
@@ -190,6 +203,8 @@ def verify(
         # 8. 통과
         elif old is None:
             decide("applied", "새로운 정보를 저장했습니다")
+        elif rescheduled:
+            decide("applied", "기존 일정이 취소되고 새 일정으로 바뀌어 반영했습니다")
         else:
             decide("applied", "변경 내용을 반영했습니다")
 
