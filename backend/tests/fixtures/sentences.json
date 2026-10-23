@@ -76,6 +76,13 @@
   {"name": "언급 - 다른 진료실 상태 (이)", "tags": ["mention"], "facts": {"room": "3번"}, "text": "7번 진료실이 지금 비어 있습니다.", "expect": {"room": [["ignored", null], "3번"]}},
   {"name": "언급 - 상태 설명 뒤 이동 안내는 변경", "tags": ["change", "directive"], "mock_xfail": true, "facts": {"room": "3번"}, "text": "5번 진료실은 지금 비어 있으니 5번 진료실로 가세요.", "expect": {"room": ["applied", "5번"]}},
 
+  {"name": "검사 이름 - 혈액 검사 시 반", "tags": ["exam", "new", "normalize"], "facts": {}, "text": "혈액 검사는 오후 3시 반에 있습니다.", "expect": {"exam_time": ["applied", "오후 3시 30분"]}},
+  {"name": "검사 이름 - 구어체 미뤄졌대요", "tags": ["exam", "change"], "facts": {"exam_time": "오후 2시"}, "text": "아 그 검사 시간이 4시로 미뤄졌대요.", "expect": {"exam_time": ["applied", "오후 4시"]}},
+  {"name": "검사 이름 - CT", "tags": ["exam", "new"], "facts": {}, "text": "CT 검사는 내일 오전 10시입니다.", "expect": {"exam_time": ["applied", ["오전 10시", "내일 오전 10시"]]}},
+  {"name": "검사 이름 - 초음파 (검사라는 말 없음)", "tags": ["exam", "change"], "facts": {"exam_time": "오후 2시"}, "text": "초음파는 오후 4시로 바뀌었습니다.", "expect": {"exam_time": ["applied", "오후 4시"]}},
+  {"name": "검사 이름 - 엑스레이 촬영", "tags": ["exam", "new"], "facts": {}, "text": "엑스레이 촬영은 2시 30분에 합니다.", "expect": {"exam_time": ["applied", "오후 2시 30분"]}},
+  {"name": "검사 이름 - 시각 없는 검사 언급", "tags": ["exam", "mention"], "facts": {"room": "3번"}, "text": "혈액 검사 끝나시면 3번 진료실로 오세요.", "expect": {"room": [["ignored", null], "3번"], "exam_time": [["ignored", "pending", null], null]}},
+
   {"name": "여러 항목 - 한 문장", "tags": ["multi", "new"], "mock_xfail": true, "facts": {}, "text": "진료실은 5번이고, 검사는 오후 3시입니다.", "expect": {"room": ["applied", "5번"], "exam_time": ["applied", "오후 3시"]}},
   {"name": "여러 항목 - 유지와 변경", "tags": ["multi", "change"], "mock_xfail": true, "facts": {"room": "3번", "exam_time": "오후 2시"}, "text": "진료실은 그대로 3번이고, 검사만 오후 4시로 변경되었습니다.", "expect": {"room": [["ignored", null], "3번"], "exam_time": ["applied", "오후 4시"]}},
   {"name": "여러 항목 - 변경과 정정", "tags": ["multi", "change", "correction"], "facts": {"room": "3번", "visit_time": "오전 10시"}, "text": "진료실이 5번으로 바뀌었습니다. 진료 시간은 10시가 아니라 10시 30분입니다.", "expect": {"room": ["applied", "5번"], "visit_time": ["applied", "오전 10시 30분"]}},
