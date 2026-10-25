@@ -272,3 +272,16 @@ def test_can_receive_is_not_uncertain():
     c = Candidate(key="medication", value="하루 3회 식후", change_type="new", evidence=text, confidence=0.9)
     [d] = verify([c], {}, text, KEYS, domain="hospital")
     assert d.status == "applied"
+
+
+@pytest.mark.parametrize("text, my_number, reason_has", [
+    ("12번 환자분 5번 진료실로 오세요.", "37", "다른 분(12번)"),     # AI가 mention으로 줘도 이유는 다른 사람 호출
+    ("137번 환자분 2번 진료실로 오세요.", "37", "다른 분(137번)"),
+    ("5번 진료실은 지금 사람이 많습니다.", "37", "단순 언급"),       # 사람을 부르지 않는 언급
+    ("12번 환자분 5번 진료실로 오세요.", None, "단순 언급"),         # 내 번호를 모르면 판단을 바꾸지 않음
+])
+def test_mention_reason_explains_other_person(text, my_number, reason_has):
+    c = Candidate(key="room", value="5번", change_type="mention", evidence=text, confidence=0.9)
+    [d] = verify([c], {"room": "3번"}, text, KEYS, domain="hospital", my_number=my_number)
+    assert d.status == "ignored"
+    assert reason_has in d.reason
