@@ -148,6 +148,8 @@ def main() -> int:
     parser.add_argument("--provider", choices=["mock", "openai"], default="mock")
     parser.add_argument("--tag", help="이 태그가 붙은 문장만 평가")
     parser.add_argument("--out", help="결과 JSON 저장 경로")
+    parser.add_argument("--fixtures", default=str(FIXTURES),
+                        help="문장 세트 파일 (기본 sentences.json, 처음 보는 문장은 tests/fixtures/heldout.json)")
     args = parser.parse_args()
 
     if args.provider == "openai":
@@ -158,7 +160,10 @@ def main() -> int:
     else:
         extractor = MockExtractor()
 
-    cases = json.loads(FIXTURES.read_text(encoding="utf-8"))
+    cases = json.loads(Path(args.fixtures).read_text(encoding="utf-8"))
+    if not cases:
+        print(f"{args.fixtures}에 문장이 없습니다.", file=sys.stderr)
+        return 1
     if args.tag:
         cases = [c for c in cases if args.tag in c.get("tags", [])]
     keys = set(item_labels(DOMAIN))
