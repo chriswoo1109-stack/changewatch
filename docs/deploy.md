@@ -14,7 +14,7 @@
 
 ## ② Render — 백엔드
 1. https://render.com 가입 → **New → Blueprint** → 이 저장소 선택
-   - 저장소 루트의 `render.yaml`을 읽어 설정이 자동으로 채워집니다. (배포 브랜치: `develop`)
+   - 저장소 루트의 `render.yaml`을 읽어 설정이 자동으로 채워집니다. (배포 브랜치: `main`. 중간발표 전까지는 `develop`이었음)
 2. 입력 칸이 나오면 값 입력
    | 키 | 값 |
    |---|---|
@@ -34,7 +34,7 @@
    - **Environment Variables**: `VITE_API_URL` = ②의 Render 주소 (`https://changewatch-api.onrender.com`, 끝에 `/` 없이)
 3. **Deploy** → 1~2분
 4. 배포 주소 확인 (예: `https://changewatch.vercel.app`)
-5. 배포 브랜치: Settings → Git → **Production Branch**를 `develop`으로 (최종 시연 전 `main`으로)
+5. 배포 브랜치: Settings → Git → **Production Branch**를 `main`으로 (develop 변경은 develop → main PR로 반영)
 
 ## ④ CORS 연결
 Render → 서비스 → **Environment** → `CORS_ORIGINS` 수정
