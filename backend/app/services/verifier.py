@@ -163,8 +163,13 @@ def verify(
         elif c.key not in allowed_keys:
             decide("pending", "추적 항목에 없는 정보라 확인이 필요합니다")
         # 3. 단순 언급은 기존 정보를 바꾸지 않는다
+        #    AI가 다른 사람 호출("12번 환자분 5번 진료실로 오세요")을 mention으로 주면 판단은 같지만,
+        #    사용자가 이유를 알 수 있게 "다른 분(12번)" 문구를 보여 준다 (결과는 그대로 ignored)
         elif c.change_type == "mention":
-            decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
+            if (called := audience(normalize_value(sentence))) and called[0] == "other":
+                decide("ignored", f"다른 분({called[1]})을 부르는 안내라 내 정보는 그대로 둡니다")
+            else:
+                decide("ignored", "단순 언급으로 판단해 기존 정보를 유지합니다")
         # 3-1. 다른 사람을 부르는 안내("12번 환자분 7번 진료실로 오세요")는 반영하지 않고, 누구인지 모르면 확인 요청
         #      AI가 근거를 "7번 진료실로 오세요"처럼 잘라 줄 수 있어 원문 문장 전체로 판단한다 (services/audience.py)
         elif (found := audience(normalize_value(sentence))) and found[0] == "other":
