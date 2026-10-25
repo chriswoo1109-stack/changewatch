@@ -16,6 +16,9 @@ from app.services.normalize import fill_meridiem, normalize_value
     ("삼십 분", "30분"),
     ("사십오 분", "45분"),
     ("하루 두 번", "하루 2번"),
+    ("하루 3회 식후 30분 한 봉", "하루 3회 식후 30분 1봉"),   # 복약 단위
+    ("두 알씩", "2알씩"),
+    ("한 포", "1포"),
     ("이 주 뒤", "2주 뒤"),
     ("삼 개월 후", "3개월 후"),
     ("오후3시30분", "오후 3시 30분"),
@@ -29,7 +32,7 @@ def test_converts(raw, expected):
 
 @pytest.mark.parametrize("raw", [
     "오후", "오전", "들어오세요", "이번 주", "이분", "한시적", "오일",
-    "네 번호", "이 일정", "하루 3회 식후 30분",
+    "네 번호", "이 일정", "하루 3회 식후 30분", "네 정말요", "한정 판매",
 ])
 def test_keeps_ordinary_words(raw):
     assert normalize_value(raw) == raw

@@ -19,7 +19,8 @@ BOUNDARY = r"(?:(?<![가-힣])|(?<=오전)|(?<=오후))"
 
 # 단위 뒤에 "호·정·의"가 오면 "번호", "일정", "주의"라서 숫자가 아닙니다
 NOT_UNIT = r"(?!호|정|의)"
-NATIVE_RE = re.compile(BOUNDARY + r"(" + "|".join(NATIVE) + r")\s*(시|번|회)" + NOT_UNIT)
+# 시각(세 시)·횟수(두 번)·복약 단위(한 봉, 두 알, 한 포). "정"은 "네 정말"이 "4정말"이 돼서 넣지 않음
+NATIVE_RE = re.compile(BOUNDARY + r"(" + "|".join(NATIVE) + r")\s*(시|번|회|봉|알|포)" + NOT_UNIT)
 SINO_RE = re.compile(BOUNDARY + r"([일이삼사오육칠팔구십백]+)(\s*)(" + UNITS + r")" + NOT_UNIT)
 
 
