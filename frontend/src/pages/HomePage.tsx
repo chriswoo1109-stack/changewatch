@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import Icon from "../components/common/Icon";
 import PendingBanner from "../components/common/PendingBanner";
+import Skeleton from "../components/common/Skeleton";
 import { useAnalyze } from "../hooks/useAnalyze";
 import { useCurrentSession } from "../hooks/useCurrentSession";
 import { useHistory } from "../hooks/useHistory";
@@ -23,7 +24,9 @@ const EXAMPLES = [
 export default function HomePage() {
   const navigate = useNavigate();
   const { setSessionId, myKeywords, setMyKeywords } = useSessionStore();
-  const { session, error: sessionError } = useCurrentSession();
+  // sessionLoading: 다른 화면에서 홈으로 돌아올 때 방문 정보를 다시 불러오는 동안.
+  // 이걸 안 보면 불러오는 몇 초 동안 "방문 없음"으로 보고 시작 화면이 잠깐 보였다가 바뀝니다.
+  const { session, loading: sessionLoading, error: sessionError } = useCurrentSession();
   const { history } = useHistory();
   const { analyze, loading, error } = useAnalyze();
   const [title, setTitle] = useState("오늘 병원 방문");
@@ -86,7 +89,12 @@ export default function HomePage() {
 
       {sessionError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{sessionError}</p>}
 
-      {!session ? (
+      {sessionLoading ? (
+        <div className="space-y-5" role="status" aria-label="방문 정보를 불러오는 중">
+          <Skeleton className="h-24" />
+          <Skeleton className="mx-auto h-40 w-40 rounded-full" />
+        </div>
+      ) : !session ? (
         <Card className="space-y-3">
           <p className="font-semibold">어디에서 들으시나요?</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
