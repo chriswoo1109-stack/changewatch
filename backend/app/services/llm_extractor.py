@@ -8,6 +8,7 @@
 import json
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -185,15 +186,61 @@ def extract_safely(
 
     형식이 조금 틀린 응답은 parse_candidates가 먼저 고쳐 쓰므로, 여기까지 오는 건 복구할 수 없는 경우뿐입니다.
     결과는 어느 쪽이든 verifier를 거치므로, 시연 중 에러로 멈추는 것보다 안전합니다.
+
+    문장이 여러 개면 문장마다 따로 AI에 물어봅니다. 한꺼번에 주면 AI가 항목마다 최종 결과 하나로 묶어 버려서
+    ("진료실은 3번… 5번 진료실은 혼잡… 12번 환자분… 37번 환자분 7번으로 변경" → "진료실 7번" 하나)
+    단순 언급·다른 사람 호출·불확실 같은 판단이 사라지기 때문입니다. (듣기 화면은 들은 문장을 모아서 보냄)
     """
     extractor = get_extractor()
+    sentences = split_sentences(text)
+    if isinstance(extractor, OpenAIExtractor) and len(sentences) > 1:
+        return extract_each_sentence(extractor, text, sentences, domain, facts, my_number, my_name)
+    return _extract_one(extractor, text, domain, facts, my_number, my_name)
+
+
+def extract_each_sentence(
+    extractor: "OpenAIExtractor", text: str, sentences: list[str], domain: str, facts: dict[str, str],
+    my_number: str | None, my_name: str | None,
+) -> ExtractionResult:
+    """문장마다 AI에 동시에 물어보고 결과를 원문 순서대로 합칩니다.
+
+    "5번입니다."처럼 앞 문장을 봐야 뜻이 통하는 문장이 있어서 안내 전체를 참고로 함께 주고,
+    다른 문장을 근거로 든 후보는 버려 중복을 막습니다. (판단·저장 순서는 verifier가 원문 순서로 정함)
+    """
+
+    def run(sentence: str) -> ExtractionResult:
+        focused = (
+            f"{text}\n\n[이번에 판단할 문장]\n{sentence}\n"
+            "(위 안내 전체는 앞뒤 맥락을 보기 위한 참고용이다. 이번에 판단할 문장에 나오는 정보만 후보·할 일로 만든다.)"
+        )
+        result = _extract_one(extractor, focused, domain, facts, my_number, my_name, fallback_text=sentence)
+        own = lambda ev: bool(ev.strip()) and ev.strip() in sentence  # noqa: E731
+        return ExtractionResult(
+            candidates=[c for c in result.candidates if own(c.evidence)],
+            todos=[t for t in result.todos if own(t.evidence)],
+        )
+
+    with ThreadPoolExecutor(max_workers=min(6, len(sentences))) as pool:
+        results = list(pool.map(run, sentences))
+    return ExtractionResult(
+        candidates=[c for r in results for c in r.candidates],
+        todos=[t for r in results for t in r.todos],
+    )
+
+
+def _extract_one(
+    extractor, text: str, domain: str, facts: dict[str, str], my_number: str | None, my_name: str | None,
+    fallback_text: str | None = None,
+) -> ExtractionResult:
+    """AI 한 번 호출. 한도 초과·실패하면 모의 분석기로 대체합니다. (fallback_text: 모의 분석기에 줄 원문)"""
+    mock_text = fallback_text or text
     if isinstance(extractor, OpenAIExtractor) and not cost_guard.use_ai_budget():
         logger.warning("오늘 AI 호출 한도 도달 → 모의 분석기로 대체")
-        return MockExtractor().extract(text, domain, facts)
+        return MockExtractor().extract(mock_text, domain, facts)
     try:
         return extractor.extract(text, domain, facts, my_number, my_name)
     except Exception:
         if isinstance(extractor, MockExtractor):
             raise
         logger.exception("AI 분석 실패 → 모의 분석기로 대체")
-        return MockExtractor().extract(text, domain, facts)
+        return MockExtractor().extract(mock_text, domain, facts)
