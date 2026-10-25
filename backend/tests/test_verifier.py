@@ -253,3 +253,22 @@ def test_cancel_with_new_schedule_becomes_change(value, old, expected_status, ex
     assert d.status == expected_status
     after = d.candidate.value if d.candidate.change_type != "cancel" else None
     assert after == expected_after
+
+
+@pytest.mark.parametrize("text", [
+    "지금 확인 중인데요, 진료실이 7번으로 바뀔 수도 있습니다.",   # 팀원이 쓴 처음 보는 문장에서 잘못 저장된 사례
+    "진료실은 확정되면 다시 안내드리겠습니다. 7번이 될 예정입니다.",
+    "진료실이 7번으로 변경될 수 있습니다.",
+])
+def test_possibility_expressions_need_confirmation(text):
+    c = Candidate(key="room", value="7번", change_type="change", evidence=text, confidence=0.8)
+    [d] = verify([c], {"room": "3번"}, text, KEYS, domain="hospital")
+    assert d.status == "pending"
+
+
+def test_can_receive_is_not_uncertain():
+    # "~수 있습니다"만으로는 불확실이 아님 ("받으실 수 있습니다")
+    text = "약은 하루 3회 식후에 드시면 되고, 처방전은 1층에서 받으실 수 있습니다."
+    c = Candidate(key="medication", value="하루 3회 식후", change_type="new", evidence=text, confidence=0.9)
+    [d] = verify([c], {}, text, KEYS, domain="hospital")
+    assert d.status == "applied"

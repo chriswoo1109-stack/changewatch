@@ -1,1 +1,14 @@
-[]
+[
+{"name": "대기실 - 내 번호 호출 (진료실 안내)", "tags": ["fresh", "call", "own"], "me": {"my_number": "37"}, "facts": {}, "text": "딩동. 내과 외래에서 안내 말씀드립니다. 삼십칠번, 37번 환자분, 3번 진료실로 들어오세요. 37번 환자분 3번 진료실입니다.", "expect": {"room": ["applied", "3번"]}},
+{"name": "대기실 - 다른 환자 호출", "tags": ["fresh", "call", "other"], "me": {"my_number": "37"}, "facts": {"room": "2번"}, "text": "52번 환자분, 52번 환자분 5번 진료실로 들어오십시오.", "expect": {"room": [["ignored", null], "2번"]}},
+{"name": "대기실 - 번호 일부만 일치 (137번)", "tags": ["fresh", "call", "partial"], "me": {"my_number": "37"}, "facts": {}, "text": "백삼십칠번 고객님, 137번 고객님께서는 7번 진료실 앞으로 와 주시기 바랍니다.", "expect": {"room": [["ignored", null], null]}},
+{"name": "간호사 - 검사 시간 변경", "tags": ["fresh", "change", "time"], "me": {"my_name": "홍길동"}, "facts": {"exam_time": "오후 2시"}, "text": "홍길동님, 죄송한데요, 오늘 오후 2시로 잡혀 있던 CT 검사가 장비 점검 때문에 오후 4시로 바뀌었어요. 4시까지 영상의학과로 오시면 됩니다.", "expect": {"exam_time": ["applied", "오후 4시"]}},
+{"name": "대기실 - 진료실 정정", "tags": ["fresh", "correction"], "facts": {"room": "4번"}, "text": "아, 정정해서 다시 안내드립니다. 조금 전에 4번 진료실이라고 말씀드렸는데요, 4번이 아니라 6번 진료실입니다. 혼선 드려 죄송합니다.", "expect": {"room": ["applied", "6번"]}},
+{"name": "대기실 - 다른 진료실 지연 언급", "tags": ["fresh", "mention"], "facts": {"room": "3번"}, "text": "외래 환자분들께 안내 말씀드립니다. 현재 5번 진료실은 대기 환자가 많아 약 30분 정도 진료가 지연되고 있습니다. 양해 부탁드립니다.", "expect": {"room": [["ignored", null], "3번"]}},
+{"name": "진료실 - 약 복용 방법", "tags": ["fresh", "medication"], "facts": {}, "text": "약은 일주일치 처방해 드렸고요, 하루 세 번 식후 30분에 한 봉씩 드시면 돼요. 속 쓰리시면 꼭 식사하고 드세요.", "expect": {"medication": ["applied", ["하루 3회 식후 30분", "하루 3번 식후 30분", "하루 세 번 식후 30분", "하루 3회, 식후 30분", "하루 3회 식후 30분 1봉"]]}},
+{"name": "진료실 - 다음 방문 준비물", "tags": ["fresh", "supplies"], "facts": {}, "text": "다음에 오실 때는 지금 드시고 계신 약 봉투 다 챙겨 오시고요, 다른 병원에서 찍으신 MRI 영상 CD도 꼭 가져와 주세요.", "expect": {"supplies": ["applied", ["약 봉투, MRI 영상 CD", "복용 중인 약 봉투, MRI CD", "약 봉투, MRI CD", "복용 중인 약, MRI 영상 CD"]]}},
+{"name": "진료실 - 다음 예약", "tags": ["fresh", "next_visit"], "facts": {}, "text": "그럼 2주 뒤에 결과 보러 오세요. 11월 8일 오전 10시 반으로 잡아 드릴게요. 수납하시고 예약증 받아 가시면 됩니다.", "expect": {"next_visit": ["applied", ["11월 8일 오전 10시 30분", "11월 8일 오전 10시 반", "11월 8일 10시 30분"]]}},
+{"name": "간호사 - 불확실한 검사 시간", "tags": ["fresh", "uncertain", "time"], "facts": {"exam_time": "오후 2시"}, "text": "지금 채혈실이 많이 밀려 있어서요, 아마 검사는 3시쯤 되실 것 같아요.", "expect": {"exam_time": ["pending", "오후 2시"]}},
+{"name": "대기실 - 확인 중인 진료실 변경", "tags": ["fresh", "uncertain"], "facts": {"room": "3번"}, "text": "3번 진료실 환자분들, 지금 확인 중인데요, 진료실이 7번으로 바뀔 수도 있습니다. 확정되면 다시 방송으로 안내해 드리겠습니다.", "expect": {"room": ["pending", "3번"]}},
+{"name": "대기실 - 두 환자 동시 호출 (내 진료실 골라내기)", "tags": ["fresh", "tricky", "call"], "me": {"my_number": "37"}, "facts": {}, "text": "35번 환자분은 3번 진료실로 들어오시고요, 그다음 37번 환자분은 2번 진료실 앞에서 대기해 주세요. 35번 3번 진료실, 37번 2번 진료실입니다.", "expect": {"room": ["applied", "2번"]}}
+]

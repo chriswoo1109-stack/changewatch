@@ -95,9 +95,13 @@ def score_case(case: dict, decisions: list) -> dict:
     """판단 결과(Decision 목록)를 문장 세트의 기대 결과와 비교해 채점합니다."""
     facts = case["facts"]
     after = dict(facts)
-    statuses: dict[str, str] = {}  # 같은 key가 여러 번 나오면 마지막 판단
+    # 같은 key에 판단이 여러 개면 하나라도 반영됐으면 "applied", 아니면 마지막 판단.
+    # 방송은 같은 정보를 되풀이하므로("37번 환자분 3번 진료실로… 3번 진료실입니다") 두 번째 문장은 "같은 값"으로 무시되는데,
+    # 마지막 판단만 보면 실제로는 저장된 정보를 '놓친 반영'으로 잘못 채점합니다.
+    statuses: dict[str, str] = {}
     for d in decisions:
-        statuses[d.candidate.key] = d.status
+        if statuses.get(d.candidate.key) != "applied":
+            statuses[d.candidate.key] = d.status
         if d.status == "applied":
             if d.candidate.change_type == "cancel":
                 after.pop(d.candidate.key, None)
