@@ -23,7 +23,7 @@ from app.domains import am_hours, item_labels, time_keys
 from app.services.llm_extractor import MockExtractor, OpenAIExtractor
 from app.services.normalize import fill_meridiem, normalize_value
 from app.services.verifier import Decision, verify
-from scripts.evaluate import DOMAIN, FIXTURES, as_list, score_case
+from scripts.evaluate import AI_FAILURES, DOMAIN, FIXTURES, as_list, extract_like_app, score_case, watch_ai_failures
 
 
 def ai_only(candidates, facts, text, keys, **_) -> list[Decision]:
@@ -130,6 +130,8 @@ def main() -> int:
     parser.add_argument("--provider", choices=["mock", "openai"], default="mock")
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--out", help="Markdown 표 저장 경로")
+    parser.add_argument("--fixtures", default=str(FIXTURES),
+                        help="문장 세트 파일 (기본 sentences.json, 처음 보는 문장은 tests/fixtures/heldout.json)")
     args = parser.parse_args()
 
     if args.provider == "openai":
@@ -137,10 +139,14 @@ def main() -> int:
             print("OPENAI_API_KEY가 .env에 없습니다.", file=sys.stderr)
             return 1
         extractor = OpenAIExtractor()
+        watch_ai_failures()
     else:
         extractor = MockExtractor()
 
-    cases = json.loads(FIXTURES.read_text(encoding="utf-8"))
+    cases = json.loads(Path(args.fixtures).read_text(encoding="utf-8"))
+    if not cases:
+        print(f"{args.fixtures}에 문장이 없습니다.", file=sys.stderr)
+        return 1
     keys = set(item_labels(DOMAIN))
     runs = {name: [] for name, _ in MODES}            # 방식별 · 회차별 요약
     rescued: dict[str, dict] = {}                     # AI 단독은 잘못 저장했는데 ③이 막은 문장 (발표 예시)
@@ -153,7 +159,7 @@ def main() -> int:
         for case in cases:
             facts, me = case["facts"], case.get("me", {})
             try:
-                candidates = extractor.extract(case["text"], DOMAIN, facts, **me).candidates
+                candidates = extract_like_app(extractor, case["text"], facts, me).candidates
             except Exception:
                 errors += 1
                 candidates = []
@@ -169,14 +175,14 @@ def main() -> int:
                     info["count"] += 1
                 if name == "③ 안전장치 추가" and per_mode["① AI 단독"][-1]["wrong_saved"] and not score["wrong_saved"]:
                     blocked = [d.reason for d in decisions if d.status != "applied"]
-                    info = rescued.setdefault(case["text"], {"count": 0, "reason": blocked[0] if blocked else "값 정규화로 바로잡음"})
+                    info = rescued.setdefault(case["text"], {"count": 0, "reason": blocked[0] if blocked else "규칙 검증이 결과를 바로잡음"})
                     info["count"] += 1
         for name in runs:
             runs[name].append(summarize(per_mode[name]))
 
     total = len(cases)
     lines = [
-        f"### 규칙 검증 효과 ({args.provider}, {total}문장 × {args.repeat}회)",
+        f"### 규칙 검증 효과 ({args.provider}, {Path(args.fixtures).name} {total}문장 × {args.repeat}회)",
         "",
         "| 판단 방식 | 문장 정답 | 잘못된 저장 | 확인 요청 | 놓친 반영 |",
         "|---|---|---|---|---|",
@@ -204,6 +210,8 @@ def main() -> int:
             lines.append(f"| {text} | {info['saved']} | {info['expected']} | {info['count']}/{args.repeat} |")
     if errors:
         lines += ["", f"(AI 분석 오류 {errors}회는 후보 없음으로 처리)"]
+    if AI_FAILURES:
+        lines += ["", f"⚠ AI 호출 실패 {len(AI_FAILURES)}회: 모의 분석기 판단이 섞였으므로 이 표는 쓰지 말고 다시 측정하세요."]
 
     report = "\n".join(lines)
     print(report)
