@@ -1,0 +1,11 @@
+{
+  "domain": "public_office",
+  "label": "공공기관",
+  "items": [
+    {"key": "documents", "label": "필요 서류", "keywords": ["서류", "준비물"]},
+    {"key": "counter", "label": "창구", "keywords": ["창구"]},
+    {"key": "processing_time", "label": "처리 기간", "keywords": ["처리 기간", "소요"]},
+    {"key": "fee", "label": "수수료", "keywords": ["수수료"]}
+  ],
+  "stt_hints": ["주민센터", "민원", "번호표", "등본", "초본", "가족관계증명서", "신분증", "위임장", "발급"]
+}
